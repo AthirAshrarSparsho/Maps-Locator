@@ -433,7 +433,7 @@
     body.theme-light .footer-note { background: rgba(255,255,255,0.95); }
 
     .map-wrap { position: relative; height: 100vh; min-width: 0; }
-    #map { height: 100%; width: 100%; } /* IMPORTANT: no CSS filter here */
+    #map { height: 100%; width: 100%; }
 
     .overlay {
       position: absolute;
@@ -522,7 +522,6 @@
       .results { max-height: 40vh; }
       .results.favs { max-height: 25vh; }
 
-      /* On mobile: keep sidebar expanded */
       .app.sidebar-collapsed { grid-template-columns: 1fr; }
       .app.sidebar-collapsed .panel,
       .app.sidebar-collapsed .footer-note,
@@ -685,7 +684,6 @@
       settings: "csp_ultimate_settings"
     };
 
-    // Stable map styles
     const MAP_STYLES = {
       osm: {
         url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -781,7 +779,8 @@
         highConfidenceOnly: $("highConfidenceOnly").checked,
         selectedCats: [...selected],
         theme: document.body.classList.contains("theme-light") ? "light" : "dark",
-        sidebarCollapsed: $("#app").classList.contains("sidebar-collapsed"),
+        // FIX: removed broken $("#app"), use $("app")
+        sidebarCollapsed: $("app").classList.contains("sidebar-collapsed"),
         mapStyle: $("mapStyleSelect").value || "osm",
         mapCenter: (curLat != null && curLon != null) ? [curLat, curLon] : null
       });
@@ -803,7 +802,8 @@
       }
 
       if (s.theme === "light") document.body.classList.add("theme-light");
-      if (s.sidebarCollapsed) $("#app").classList.add("sidebar-collapsed");
+      // FIX: removed broken $("#app"), use $("app")
+      if (s.sidebarCollapsed) $("app").classList.add("sidebar-collapsed");
       if (s.mapStyle && MAP_STYLES[s.mapStyle]) $("mapStyleSelect").value = s.mapStyle;
 
       if (Array.isArray(s.mapCenter) && s.mapCenter.length === 2) {
@@ -870,7 +870,7 @@
     }
 
     // ========================
-    // Map (reliable)
+    // Map
     // ========================
     const map = L.map("map", { zoomControl: true }).setView([43.6532, -79.3832], 12);
 
@@ -1019,7 +1019,7 @@
       }).toString();
 
       const res = await fetch(url, {
-        headers: { "Accept": "application/json", "User-Agent": "PublicChargingOutletFinder/1.0" }
+        headers: { "Accept": "application/json" }
       });
       if (!res.ok) throw new Error(`Geocoding failed (${res.status})`);
 
@@ -1346,7 +1346,7 @@ out center tags;`.trim();
         status(`Found ${shown.length} matches within ${km} km.`);
       } catch (e) {
         console.error(e);
-        status("Search failed. Try again or load cache.", true);
+        status(`Search failed: ${e?.message || "Unknown error"}. Try again or load cache.`, true);
       } finally {
         $("locateBtn").disabled = false;
         $("refreshBtn").disabled = false;
@@ -1413,7 +1413,7 @@ out center tags;`.trim();
     }
 
     function toggleSidebar() {
-      $("#app").classList.toggle("sidebar-collapsed");
+      $("app").classList.toggle("sidebar-collapsed");
       setTimeout(() => map.invalidateSize(), 220);
       saveSettings();
     }
@@ -1472,20 +1472,22 @@ out center tags;`.trim();
     // Init
     // ========================
     (function init() {
-      loadSettings();
+      try {
+        loadSettings();
+        setMapStyle($("mapStyleSelect").value || "osm");
+        registerEvents();
+        renderChips();
+        renderFav();
 
-      // apply saved map style after settings load
-      setMapStyle($("mapStyleSelect").value || "osm");
+        if (curLat != null && curLon != null) map.setView([curLat, curLon], 13);
 
-      registerEvents();
-      renderChips();
-      renderFav();
-
-      if (curLat != null && curLon != null) map.setView([curLat, curLon], 13);
-
-      apply();
-      renderResults();
-      renderMap();
+        apply();
+        renderResults();
+        renderMap();
+      } catch (e) {
+        console.error(e);
+        status(`Initialization error: ${e?.message || "Unknown error"}`, true);
+      }
     })();
   </script>
 </body>
