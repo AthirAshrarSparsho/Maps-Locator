@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Public Device Charger Finder</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #0b1220;
+      --line: #1f2937;
+      --line2: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 14px;
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+    }
+
+    .sub {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    label {
+      font-size: 0.84rem;
+      color: #cbd5e1;
+    }
+
+    input[type="number"], select {
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--line2);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    input[type="number"] { width: 92px; }
+    select { min-width: 120px; }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .btn-primary { background: var(--accent); color: #07240f; }
+    .btn-secondary { background: #334155; color: #f8fafc; }
+    .btn-ghost { background: #1f2937; color: #cbd5e1; }
+    .btn-warn { background: var(--warn); color: #2a1a00; }
+    .btn-good { background: #064e3b; color: #d1fae5; border: 1px solid #065f46; }
+    .btn-bad { background: #7f1d1d; color: #fee2e2; border: 1px solid #991b1b; }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .chip {
+      border: 1px solid var(--line2);
+      background: #101827;
+      color: #dbeafe;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chip.active {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #eff6ff;
+    }
+
+    .status {
+      font-size: 0.86rem;
+      color: var(--muted);
+      min-height: 20px;
+      margin-top: 6px;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .sectionhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .tiny { font-size: 0.75rem; color: var(--muted); }
+
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .title {
+      font-size: 0.94rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .pill {
+      display: inline-block;
+      border: 1px solid #334155;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      margin-right: 5px;
+      margin-bottom: 5px;
+      color: #cbd5e1;
+      text-decoration: none;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    #map { height: 100vh; width: 100%; }
+
+    .topbar {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 0.79rem;
+      color: #cbd5e1;
+      max-width: 420px;
+      backdrop-filter: blur(4px);
+    }
+
+    @media (max-width: 980px) {
+      .wrap {
+        grid-template-columns: 1fr;
+        grid-template-rows: 58vh 42vh;
+      }
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+      #map { height: 42vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="sidebar">
+      <h1>Public Device Charger Finder</h1>
+      <div class="sub">
+        Find likely places to charge phones/laptops/tablets (non-EV).
+      </div>
+
+      <div class="box">
+        <div class="row">
+          <label for="radiusKm">Radius (km)</label>
+          <input id="radiusKm" type="number" min="1" max="30" value="5" />
+
+          <label for="sortBy">Sort</label>
+          <select id="sortBy">
+            <option value="best">Best match</option>
+            <option value="nearest">Nearest</option>
+            <option value="community">Community score</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <button id="locateBtn" class="btn-primary">Use My Location</button>
+          <button id="refreshBtn" class="btn-secondary">Refresh</button>
+          <button id="offlineBtn" class="btn-ghost">Load Offline Cache</button>
+        </div>
+
+        <div class="row">
+          <label><input id="open247Only" type="checkbox" /> 24/7 likely only</label>
+          <label><input id="showHeat" type="checkbox" checked /> Heat bubbles</label>
+        </div>
+
+        <div class="hint">
+          Community votes/favorites are saved in your browser on this device.
+        </div>
+      </div>
+
+      <div class="box">
+        <label>Category filters</label>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="status" id="status">Click “Use My Location” to start.</div>
+
+      <div class="sectionhead">
+        <span>Favorites</span>
+        <button id="clearFavBtn" class="btn-warn">Clear Favorites</button>
+      </div>
+      <div id="favList" class="results"></div>
+
+      <hr style="border:0; border-top:1px solid #1f2937; margin:12px 0;" />
+
+      <div class="sectionhead">
+        <span>Results</span>
+        <span class="tiny" id="count"></span>
+      </div>
+      <div id="results" class="results"></div>
+    </aside>
+
+    <main style="position:relative;">
+      <div class="topbar">
+        Data source: OpenStreetMap (via Overpass). No account needed.
+      </div>
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+
+  <script>
+    // ---------------- Constants ----------------
+    const CATS = [
+      { k: "cafe",    l: "Cafés",           m: t => ["cafe","restaurant","fast_food","food_court"].includes(t.amenity) },
+      { k: "library", l: "Libraries",       m: t => t.amenity === "library" },
+      { k: "campus",  l: "Campus",          m: t => ["college","university","school"].includes(t.amenity) },
+      { k: "cowork",  l: "Coworking",       m: t => ["coworking","co-working"].includes(t.office) },
+      { k: "transit", l: "Transit",         m: t => !!t.public_transport || t.railway === "station" || t.amenity === "bus_station" },
+      { k: "mall",    l: "Malls",           m: t => t.shop === "mall" || t.building === "retail" },
+      { k: "hotel",   l: "Hotels",          m: t => ["hotel","hostel"].includes(t.tourism) },
+      { k: "explicit",l: "Explicit outlets",m: t => "socket" in t || "socket:usb" in t || "charging" in t || "power_supply" in t || "outlet" in t }
+    ];
+
+    const LS = {
+      fav: "cdf_single_favs",
+      votes: "cdf_single_votes",
+      cache: "cdf_single_cache"
+    };
+
+    // ---------------- State ----------------
+    let curLat = null, curLon = null;
+    let all = [], shown = [];
+    let selected = new Set(CATS.map(c => c.k));
+
+    // ---------------- Helpers ----------------
+    const $ = id => document.getElementById(id);
+
+    const esc = s => String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
+
+    function pj(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch { return fallback; }
+    }
+
+    function sj(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function hav(a,b,c,d) {
+      const R = 6371, t = x => x * Math.PI / 180;
+      const dl = t(c - a), dn = t(d - b);
+      const q = Math.sin(dl/2)**2 + Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(q));
+    }
+
+    function ll(el) {
+      if (el.lat != null && el.lon != null) return [el.lat, el.lon];
+      if (el.center?.lat != null && el.center?.lon != null) return [el.center.lat, el.center.lon];
+      return [null, null];
+    }
+
+    function dir(fl, fo, tl, to, m = "walking") {
+      return `https://www.google.com/maps/dir/?api=1&origin=${fl},${fo}&destination=${tl},${to}&travelmode=${m}`;
+    }
+
+    function is247(t) {
+      return (t.opening_hours || "").trim() === "24/7"
+        || t.railway === "station"
+        || t.amenity === "bus_station";
+    }
+
+    // ---------------- Community votes (local-only) ----------------
+    function votes() {
+      return pj(LS.votes, {});
+    }
+
+    function getVote(id) {
+      const v = votes()[id];
+      return v || { yes: 0, no: 0 };
+    }
+
+    function castVote(id, type) {
+      const v = votes();
+      const row = v[id] || { yes: 0, no: 0 };
+      if (type === "yes") row.yes += 1;
+      if (type === "no") row.no += 1;
+      v[id] = row;
+      sj(LS.votes, v);
+    }
+
+    function cScore(id) {
+      const v = getVote(id);
+      const t = v.yes + v.no;
+      if (!t) return 0;
+      return (v.yes - v.no) / t;
+    }
+
+    // ---------------- Map ----------------
+    const map = L.map("map").setView([43.6532, -79.3832], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    let placeLayer = L.layerGroup().addTo(map);
+    let heatLayer = L.layerGroup().addTo(map);
+    let me = null, circle = null;
+
+    // ---------------- Favorites ----------------
+    function favs() { return pj(LS.fav, []); }
+    function isFav(id) { return favs().some(f => f.id === id); }
+
+    function toggleFav(p) {
+      const fs = favs();
+      const i = fs.findIndex(x => x.id === p.id);
+      if (i >= 0) fs.splice(i, 1);
+      else fs.push({ id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist });
+      sj(LS.fav, fs);
+      renderFav();
+      renderResults();
+    }
+
+    function renderFav() {
+      const box = $("favList");
+      const fs = favs();
+      box.innerHTML = "";
+
+      if (!fs.length) {
+        box.innerHTML = `<div class="card"><div class="meta">No favorites yet.</div></div>`;
+        return;
+      }
+
+      fs.forEach(f => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `
+          <div class="title">${esc(f.name)}</div>
+          <div class="meta">${esc(f.type)} ${f.dist != null ? "• " + f.dist.toFixed(2) + " km" : ""}</div>
+          <div class="actions">
+            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "walking")}">Walk</a>
+            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "driving")}">Drive</a>
+            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "transit")}">Transit</a>
+          </div>
+        `;
+        c.onclick = () => map.setView([f.lat, f.lon], 17);
+        box.appendChild(c);
+      });
+    }
+
+    // ---------------- OSM Fetch ----------------
+    async function fetchOSM(lat, lon, km) {
+      const r = Math.round(km * 1000);
+      const q = `
+[out:json][timeout:45];
+(
+  nwr(around:${r},${lat},${lon})[amenity~"cafe|restaurant|fast_food|food_court|library|college|university|school|bus_station|atm"];
+  nwr(around:${r},${lat},${lon})[shop="mall"];
+  nwr(around:${r},${lat},${lon})[tourism~"hotel|hostel"];
+  nwr(around:${r},${lat},${lon})[public_transport];
+  nwr(around:${r},${lat},${lon})[railway="station"];
+  nwr(around:${r},${lat},${lon})[office~"coworking|co-working"];
+  nwr(around:${r},${lat},${lon})["socket"];
+  nwr(around:${r},${lat},${lon})["socket:usb"];
+  nwr(around:${r},${lat},${lon})["charging"];
+  nwr(around:${r},${lat},${lon})["power_supply"];
+  nwr(around:${r},${lat},${lon})["outlet"];
+);
+out center tags;`.trim();
+
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: new URLSearchParams({ data: q })
+      });
+
+      if (!res.ok) throw new Error(`Overpass failed (${res.status})`);
+      const data = await res.json();
+      return data.elements || [];
+    }
+
+    function scoreOSM(t) {
+      let s = 0;
+      ["socket","socket:usb","charging","power_supply","outlet"].forEach(k => { if (k in t) s += 4; });
+      if (["cafe","restaurant","fast_food","food_court"].includes(t.amenity)) s += 3;
+      if (["library","college","university","school"].includes(t.amenity)) s += 3;
+      if (["coworking","co-working"].includes(t.office)) s += 3;
+      if (t.shop === "mall" || t.building === "retail") s += 2;
+      if (["hotel","hostel"].includes(t.tourism)) s += 2;
+      if (t.public_transport || t.railway === "station" || t.amenity === "bus_station") s += 2;
+      if (t.wifi === "yes" || t.internet_access === "yes") s += 1;
+      if (is247(t)) s += 1;
+      return s;
+    }
+
+    function normalize(elements, lat, lon) {
+      const m = new Map();
+
+      for (const e of elements) {
+        const [la, lo] = ll(e);
+        if (la == null || lo == null) continue;
+
+        const t = e.tags || {};
+        const id = `${e.type}/${e.id}`;
+        const base = scoreOSM(t);
+        if (base < 2) continue;
+
+        m.set(id, {
+          id,
+          lat: la,
+          lon: lo,
+          tags: t,
+          name: t.name || t.brand || "Unnamed place",
+          type: t.amenity || t.shop || t.tourism || t.office || t.public_transport || t.railway || "place",
+          base,
+          dist: hav(lat, lon, la, lo),
+          is247: is247(t),
+          tagsPreview: Object.entries(t)
+            .filter(([k]) => [
+              "amenity","shop","tourism","office","public_transport","railway",
+              "socket","socket:usb","charging","power_supply","outlet",
+              "opening_hours","wifi","internet_access"
+            ].includes(k))
+            .slice(0, 6)
+            .map(([k,v]) => `${k}:${v}`)
+        });
+      }
+
+      return [...m.values()];
+    }
+
+    function conf(p) {
+      const adj = p.base + cScore(p.id) * 2;
+      if (adj >= 8) return "High confidence";
+      if (adj >= 5) return "Likely";
+      return "Possible";
+    }
+
+    function apply() {
+      const sort = $("sortBy").value;
+      const only247 = $("open247Only").checked;
+
+      shown = all.filter(p => {
+        const cat = CATS.some(c => selected.has(c.k) && c.m(p.tags));
+        const f247 = !only247 || p.is247;
+        return cat && f247;
+      });
+
+      shown.sort((a, b) => {
+        if (sort === "nearest") return a.dist - b.dist;
+        if (sort === "community") return cScore(b.id) - cScore(a.id) || a.dist - b.dist;
+
+        // best
+        const aw = a.base + cScore(a.id) * 2 - a.dist * 0.25 + (a.is247 ? 0.6 : 0);
+        const bw = b.base + cScore(b.id) * 2 - b.dist * 0.25 + (b.is247 ? 0.6 : 0);
+        return bw - aw;
+      });
+    }
+
+    function renderHeat() {
+      heatLayer.clearLayers();
+      if (!$("showHeat").checked) return;
+
+      shown.slice(0, 120).forEach(p => {
+        const intensity = Math.max(0, Math.min(1, (p.base / 12) + (cScore(p.id) * 0.25)));
+        L.circle([p.lat, p.lon], {
+          radius: 60 + intensity * 120,
+          weight: 0,
+          fillOpacity: 0.1 + intensity * 0.22
+        }).addTo(heatLayer);
+      });
+    }
+
+    function renderMap() {
+      placeLayer.clearLayers();
+
+      if (me) map.removeLayer(me);
+      if (circle) map.removeLayer(circle);
+
+      const km = Number($("radiusKm").value || 5);
+
+      if (curLat != null) {
+        me = L.marker([curLat, curLon]).addTo(map).bindPopup("<b>You are here</b>");
+        circle = L.circle([curLat, curLon], { radius: km * 1000, fillOpacity: 0.06 }).addTo(map);
+      }
+
+      shown.slice(0, 220).forEach(p => {
+        const r = Math.max(5, Math.min(10, p.base + (cScore(p.id) > 0 ? 1 : 0)));
+        const v = getVote(p.id);
+        L.circleMarker([p.lat, p.lon], { radius: r, weight: 1 }).addTo(placeLayer)
+          .bindPopup(`
+            <div style="min-width:220px">
+              <div style="font-weight:700">${esc(p.name)}</div>
+              <div style="font-size:12px;color:#475569">${esc(p.type)} • ${p.dist.toFixed(2)} km</div>
+              <div style="font-size:12px;color:#475569">${conf(p)} ${p.is247 ? "• 24/7 likely" : ""}</div>
+              <div style="font-size:12px;color:#475569">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
+            </div>
+          `);
+      });
+
+      renderHeat();
+
+      if (curLat != null) {
+        const fg = L.featureGroup([me, circle, ...placeLayer.getLayers()]);
+        map.fitBounds(fg.getBounds().pad(0.2), { maxZoom: 15 });
+      }
+    }
+
+    function cardHTML(p) {
+      const v = getVote(p.id);
+
+      return `
+        <div class="title">${esc(p.name)}</div>
+        <div class="meta">${esc(p.type)} • ${p.dist.toFixed(2)} km • ${conf(p)} ${p.is247 ? "• 24/7 likely" : ""}</div>
+        <div>${p.tagsPreview.slice(0,5).map(t => `<span class="pill">${esc(t)}</span>`).join("")}</div>
+        <div class="meta">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
+        <div class="actions">
+          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "walking")}">Walk</a>
+          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "driving")}">Drive</a>
+          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "transit")}">Transit</a>
+          <button class="btn-ghost fav" data-id="${esc(p.id)}">${isFav(p.id) ? "★ Saved" : "☆ Save"}</button>
+          <button class="btn-good yes" data-id="${esc(p.id)}">I charged here</button>
+          <button class="btn-bad no" data-id="${esc(p.id)}">No outlet found</button>
+        </div>
+      `;
+    }
+
+    function renderResults() {
+      const box = $("results");
+      box.innerHTML = "";
+      $("count").textContent = `${shown.length} match(es)`;
+
+      if (!shown.length) {
+        box.innerHTML = `<div class="card"><div class="meta">No matches. Try bigger radius or fewer filters.</div></div>`;
+        return;
+      }
+
+      shown.slice(0, 90).forEach(p => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = cardHTML(p);
+
+        c.onclick = (e) => {
+          if (e.target.closest("button") || e.target.closest("a")) return;
+          map.setView([p.lat, p.lon], 17);
+        };
+
+        box.appendChild(c);
+      });
+
+      box.querySelectorAll(".fav").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const p = shown.find(x => x.id === btn.dataset.id);
+          if (p) toggleFav(p);
+        };
+      });
+
+      box.querySelectorAll(".yes").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          castVote(btn.dataset.id, "yes");
+          apply();
+          renderResults();
+          renderMap();
+        };
+      });
+
+      box.querySelectorAll(".no").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          castVote(btn.dataset.id, "no");
+          apply();
+          renderResults();
+          renderMap();
+        };
+      });
+    }
+
+    function renderChips() {
+      const box = $("chips");
+      box.innerHTML = "";
+
+      CATS.forEach(c => {
+        const d = document.createElement("div");
+        d.className = "chip" + (selected.has(c.k) ? " active" : "");
+        d.textContent = c.l;
+        d.onclick = () => {
+          if (selected.has(c.k)) selected.delete(c.k);
+          else selected.add(c.k);
+          d.classList.toggle("active");
+
+          apply();
+          renderResults();
+          renderMap();
+        };
+        box.appendChild(d);
+      });
+    }
+
+    function saveCache() {
+      sj(LS.cache, {
+        savedAt: Date.now(),
+        lat: curLat,
+        lon: curLon,
+        radiusKm: Number($("radiusKm").value || 5),
+        items: all.slice(0, 300)
+      });
+    }
+
+    function loadCache() {
+      const c = pj(LS.cache, null);
+      if (!c || !c.items) {
+        $("status").textContent = "No offline cache found yet.";
+        return;
+      }
+
+      curLat = c.lat;
+      curLon = c.lon;
+      $("radiusKm").value = c.radiusKm;
+      all = c.items;
+
+      apply();
+      renderResults();
+      renderMap();
+
+      $("status").textContent = `Loaded offline cache from ${new Date(c.savedAt).toLocaleString()}.`;
+    }
+
+    async function search() {
+      if (curLat == null || curLon == null) {
+        $("status").textContent = "Please enable location first.";
+        return;
+      }
+
+      const km = Number($("radiusKm").value || 5);
+      if (!Number.isFinite(km) || km < 1 || km > 30) {
+        $("status").textContent = "Radius must be between 1 and 30 km.";
+        return;
+      }
+
+      $("locateBtn").disabled = true;
+      $("refreshBtn").disabled = true;
+      $("status").textContent = "Searching nearby places...";
+
+      try {
+        const raw = await fetchOSM(curLat, curLon, km);
+        all = normalize(raw, curLat, curLon);
+
+        saveCache();
+
+        apply();
+        renderResults();
+        renderMap();
+
+        $("status").textContent = `Found ${shown.length} matches within ${km} km.`;
+      } catch (e) {
+        console.error(e);
+        $("status").innerHTML = `<span style="color:var(--danger)">Search failed. Try again or load offline cache.</span>`;
+      } finally {
+        $("locateBtn").disabled = false;
+        $("refreshBtn").disabled = false;
+      }
+    }
+
+    function locate() {
+      if (!navigator.geolocation) {
+        $("status").textContent = "Geolocation is not supported by this browser.";
+        return;
+      }
+
+      $("status").textContent = "Getting your location...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          curLat = pos.coords.latitude;
+          curLon = pos.coords.longitude;
+          search();
+        },
+        (err) => {
+          console.error(err);
+          $("status").textContent = "Location denied/unavailable. You can still load offline cache.";
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      );
+    }
+
+    // ---------------- Events ----------------
+    $("locateBtn").onclick = locate;
+    $("refreshBtn").onclick = search;
+    $("offlineBtn").onclick = loadCache;
+
+    $("sortBy").onchange = () => {
+      apply(); renderResults(); renderMap();
+    };
+
+    $("open247Only").onchange = () => {
+      apply(); renderResults(); renderMap();
+    };
+
+    $("showHeat").onchange = () => {
+      renderMap();
+    };
+
+    $("clearFavBtn").onclick = () => {
+      localStorage.removeItem(LS.fav);
+      renderFav();
+      renderResults();
+    };
+
+    // ---------------- Init ----------------
+    (function init() {
+      renderChips();
+      renderFav();
+    })();
+  </script>
+</body>
+</html>
