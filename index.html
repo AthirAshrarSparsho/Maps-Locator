@@ -2,156 +2,396 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Public Device Charger Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChargeSpot Pro | Premium Public Device Charger Finder</title>
+  <meta name="description" content="Find premium-ranked public places to charge phones, tablets, and laptops." />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 10L18 35h12l-2 19 18-25H34z' fill='%23061116'/%3E%3C/svg%3E" />
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://overpass-api.de" />
+  <link rel="preconnect" href="https://nominatim.openstreetmap.org" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --card: #0b1220;
-      --line: #1f2937;
-      --line2: #334155;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22c55e;
+      --bg: #070b14;
+      --bg2: #080f1d;
+      --panel: rgba(10, 16, 32, 0.86);
+      --panel-solid: #0d1529;
+      --card: rgba(15, 23, 42, 0.78);
+      --line: rgba(148, 163, 184, 0.22);
+      --line-strong: rgba(148, 163, 184, 0.4);
+      --text: #e2e8f0;
+      --muted: #93a4bf;
+      --muted-2: #7e8ba3;
+      --accent: #5eead4;
+      --accent-2: #22d3ee;
+      --primary: #4f46e5;
+      --ok: #22c55e;
       --warn: #f59e0b;
-      --danger: #ef4444;
+      --bad: #ef4444;
+      --chip: #1a2440;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
+      --shadow-soft: 0 4px 16px rgba(2, 6, 23, 0.35);
+      --gradient:
+        radial-gradient(1200px 500px at 0% -20%, rgba(34, 211, 238, 0.22), transparent 50%),
+        radial-gradient(900px 460px at 100% 0%, rgba(79, 70, 229, 0.24), transparent 48%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+      --map-filter: none;
+    }
+
+    body.theme-light {
+      --bg: #f1f5f9;
+      --bg2: #e2e8f0;
+      --panel: rgba(255, 255, 255, 0.84);
+      --panel-solid: #ffffff;
+      --card: rgba(255, 255, 255, 0.85);
+      --line: rgba(71, 85, 105, 0.2);
+      --line-strong: rgba(71, 85, 105, 0.35);
+      --text: #0f172a;
+      --muted: #475569;
+      --muted-2: #64748b;
+      --accent: #0ea5e9;
+      --accent-2: #14b8a6;
+      --primary: #4f46e5;
+      --chip: #eef2ff;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      --shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.08);
+      --gradient:
+        radial-gradient(1100px 480px at 0% -20%, rgba(14, 165, 233, 0.18), transparent 50%),
+        radial-gradient(900px 420px at 100% 0%, rgba(99, 102, 241, 0.16), transparent 52%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+      --map-filter: saturate(1.05) contrast(1.02);
     }
 
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
     body {
       margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       color: var(--text);
+      background: var(--gradient);
+      overflow: hidden;
+      transition: background 0.25s ease;
     }
 
-    .wrap {
+    .app {
       display: grid;
-      grid-template-columns: 420px 1fr;
+      grid-template-columns: var(--sidebar-width, 430px) 1fr;
       height: 100vh;
+      transition: grid-template-columns 0.22s ease;
+    }
+
+    .app.sidebar-collapsed {
+      --sidebar-width: 74px;
     }
 
     .sidebar {
-      background: var(--panel);
       border-right: 1px solid var(--line);
-      padding: 14px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       overflow: auto;
+      padding: 12px;
+      position: relative;
+      transition: padding 0.2s ease;
+    }
+
+    .app.sidebar-collapsed .sidebar {
+      padding: 10px 8px;
+      overflow-x: hidden;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, var(--accent), var(--primary));
+      box-shadow: 0 6px 16px rgba(34, 211, 238, 0.35);
+      display: grid;
+      place-items: center;
+      color: #05111b;
+      font-weight: 900;
+      font-size: 14px;
+      flex-shrink: 0;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: 1.08rem;
+      margin: 0;
+      font-size: 1.02rem;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .sub {
-      margin-bottom: 12px;
+    .subtitle {
       color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.35;
+      font-size: 0.82rem;
+      margin-top: 2px;
+      line-height: 1.28;
     }
 
-    .box {
-      background: var(--card);
+    .icon-btn {
+      cursor: pointer;
+      border: 1px solid var(--line-strong);
+      background: rgba(15, 23, 42, 0.45);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 0.95rem;
+      transition: filter 0.15s ease, background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .icon-btn:hover { filter: brightness(1.08); }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.74), rgba(10, 16, 28, 0.72));
       border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
+      border-radius: var(--radius);
+      padding: 12px;
       margin-bottom: 10px;
+      box-shadow: var(--shadow-soft);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    body.theme-light .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.82));
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: color-mix(in srgb, var(--text) 86%, #9db2cc 14%);
+      letter-spacing: 0.2px;
+      margin-bottom: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .row {
       display: flex;
       gap: 8px;
       align-items: center;
-      margin-bottom: 8px;
       flex-wrap: wrap;
+      margin-bottom: 8px;
     }
+
+    .row:last-child { margin-bottom: 0; }
 
     label {
-      font-size: 0.84rem;
-      color: #cbd5e1;
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--text) 82%, var(--muted) 18%);
+      letter-spacing: 0.2px;
     }
 
-    input[type="number"], select {
-      background: #0b1220;
+    .control {
+      background: rgba(9, 14, 26, 0.9);
       color: var(--text);
-      border: 1px solid var(--line2);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 0.9rem;
-    }
-
-    input[type="number"] { width: 92px; }
-    select { min-width: 120px; }
-
-    button {
-      cursor: pointer;
-      border: 0;
+      border: 1px solid var(--line-strong);
       border-radius: 10px;
-      padding: 9px 12px;
-      font-weight: 700;
-      font-size: 0.85rem;
+      padding: 8px 9px;
+      font-size: 0.86rem;
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
     }
 
-    .btn-primary { background: var(--accent); color: #07240f; }
-    .btn-secondary { background: #334155; color: #f8fafc; }
-    .btn-ghost { background: #1f2937; color: #cbd5e1; }
-    .btn-warn { background: var(--warn); color: #2a1a00; }
-    .btn-good { background: #064e3b; color: #d1fae5; border: 1px solid #065f46; }
-    .btn-bad { background: #7f1d1d; color: #fee2e2; border: 1px solid #991b1b; }
+    body.theme-light .control {
+      background: rgba(255,255,255,0.88);
+    }
+
+    .control:focus {
+      border-color: color-mix(in srgb, var(--accent) 80%, white 20%);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent 76%);
+      background: rgba(6, 12, 22, 0.95);
+    }
+
+    body.theme-light .control:focus {
+      background: rgba(255,255,255,0.98);
+    }
+
+    input[type="number"].control { width: 92px; }
+    select.control { min-width: 126px; }
+    input[type="text"].control { flex: 1; min-width: 220px; }
+
+    .btn {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 9px 11px;
+      font-weight: 700;
+      font-size: 0.79rem;
+      color: #e8f1ff;
+      background: #1b2742;
+      transition: transform .08s ease, filter .16s ease, border-color .16s ease, background .16s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #14b8a6);
+      color: #062018;
+      border-color: rgba(20, 184, 166, 0.45);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #334155, #3f4f68);
+      border-color: rgba(148, 163, 184, 0.34);
+      color: #e5edf9;
+    }
+
+    body.theme-light .btn-secondary {
+      background: linear-gradient(135deg, #dbeafe, #c7d2fe);
+      color: #1e293b;
+      border-color: rgba(71, 85, 105, 0.28);
+    }
+
+    .btn-ghost {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(100, 116, 139, 0.35);
+      color: #d3ddeb;
+    }
+
+    body.theme-light .btn-ghost {
+      background: rgba(241,245,249,0.95);
+      color: #1e293b;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #7f1d1d, #b91c1c);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fee2e2;
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggle {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.79rem;
+      color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
+      background: rgba(15, 23, 42, 0.64);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 9px;
+    }
+
+    body.theme-light .toggle {
+      background: rgba(248, 250, 252, 0.95);
+    }
+
+    .toggle input { transform: translateY(0.5px); }
 
     .chips {
       display: flex;
-      gap: 6px;
+      gap: 7px;
       flex-wrap: wrap;
-      margin-top: 6px;
+      margin-top: 2px;
     }
 
     .chip {
-      border: 1px solid var(--line2);
-      background: #101827;
-      color: #dbeafe;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: var(--chip);
+      color: color-mix(in srgb, var(--text) 88%, #c5d5ff 12%);
       border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 0.78rem;
+      padding: 6px 10px;
+      font-size: 0.77rem;
       cursor: pointer;
       user-select: none;
+      transition: all .15s ease;
     }
 
+    .chip:hover { border-color: rgba(148, 163, 184, 0.56); }
     .chip.active {
-      background: #1d4ed8;
-      border-color: #3b82f6;
+      background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+      border-color: rgba(99, 102, 241, 0.95);
       color: #eff6ff;
     }
 
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 8px;
+      margin-top: 5px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 9px;
+      background: rgba(9, 14, 26, 0.72);
+    }
+
+    body.theme-light .kpi { background: rgba(255,255,255,0.92); }
+
+    .kpi .v {
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .kpi .l {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
     .status {
-      font-size: 0.86rem;
+      border: 1px solid var(--line);
+      background: rgba(8, 13, 24, 0.72);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 0.81rem;
       color: var(--muted);
-      min-height: 20px;
-      margin-top: 6px;
-    }
-
-    .hint {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .sectionhead {
+      min-height: 38px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       margin-top: 8px;
-      margin-bottom: 6px;
-      font-size: 0.85rem;
-      color: #cbd5e1;
+    }
+
+    body.theme-light .status { background: rgba(255,255,255,0.95); }
+
+    .list-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 6px 2px;
+      font-size: 0.82rem;
+      color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
+      gap: 8px;
     }
 
     .tiny { font-size: 0.75rem; color: var(--muted); }
@@ -161,39 +401,77 @@
       flex-direction: column;
       gap: 8px;
       margin-top: 8px;
+      max-height: 37vh;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .results.favs {
+      max-height: 22vh;
     }
 
     .card {
-      background: var(--card);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(11, 18, 32, 0.75));
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 10px;
+      box-shadow: var(--shadow-soft);
+      transition: border-color .14s ease, transform .08s ease;
+    }
+
+    body.theme-light .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.94));
+    }
+
+    .card:hover { border-color: rgba(148, 163, 184, 0.52); }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: start;
     }
 
     .title {
-      font-size: 0.94rem;
-      font-weight: 700;
-      margin-bottom: 3px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.24;
     }
 
+    .confidence {
+      font-size: 0.7rem;
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .conf-high { background: rgba(34, 197, 94, 0.13); border-color: rgba(34, 197, 94, 0.4); color: #bbf7d0; }
+    .conf-mid  { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
+    .conf-low  { background: rgba(239, 68, 68, 0.11); border-color: rgba(239, 68, 68, 0.35); color: #fecaca; }
+
     .meta {
-      font-size: 0.8rem;
+      font-size: 0.77rem;
       color: var(--muted);
-      line-height: 1.3;
-      margin-bottom: 6px;
+      line-height: 1.35;
+      margin: 4px 0 6px;
     }
 
     .pill {
       display: inline-block;
-      border: 1px solid #334155;
+      border: 1px solid rgba(148, 163, 184, 0.35);
       border-radius: 999px;
       padding: 2px 7px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       margin-right: 5px;
       margin-bottom: 5px;
-      color: #cbd5e1;
+      color: color-mix(in srgb, var(--text) 82%, #a8b9ce 18%);
       text-decoration: none;
+      background: rgba(15, 23, 42, 0.55);
     }
+
+    body.theme-light .pill { background: rgba(248,250,252,0.95); }
 
     .actions {
       display: flex;
@@ -202,133 +480,345 @@
       margin-top: 6px;
     }
 
-    #map { height: 100vh; width: 100%; }
+    .pill-btn {
+      cursor: pointer;
+      border: 1px solid rgba(148, 163, 184, 0.34);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      background: rgba(15, 23, 42, 0.58);
+      color: color-mix(in srgb, var(--text) 86%, #b3c5e2 14%);
+    }
 
-    .topbar {
-      position: absolute;
-      right: 12px;
-      top: 12px;
-      z-index: 1000;
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid #334155;
+    body.theme-light .pill-btn { background: rgba(248,250,252,0.95); }
+
+    .pill-btn.ok { border-color: rgba(34, 197, 94, 0.5); color: #bbf7d0; }
+    .pill-btn.bad { border-color: rgba(239, 68, 68, 0.5); color: #fecaca; }
+
+    .footer-note {
+      margin-top: 12px;
+      padding: 9px 8px;
+      border: 1px solid var(--line);
+      background: rgba(8, 13, 24, 0.6);
       border-radius: 12px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.2px;
+    }
+
+    body.theme-light .footer-note { background: rgba(255,255,255,0.95); }
+
+    .map-wrap {
+      position: relative;
+      height: 100vh;
+      min-width: 0;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+      filter: var(--map-filter);
+    }
+
+    .overlay {
+      position: absolute;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      background: rgba(9, 14, 26, 0.78);
+      border-radius: 12px;
+      color: color-mix(in srgb, var(--text) 84%, #b9cbe2 16%);
+    }
+
+    body.theme-light .overlay {
+      background: rgba(255,255,255,0.9);
+      color: #334155;
+    }
+
+    .top-right {
+      top: 12px;
+      right: 12px;
+      max-width: 440px;
       padding: 8px 10px;
-      font-size: 0.79rem;
-      color: #cbd5e1;
-      max-width: 420px;
-      backdrop-filter: blur(4px);
+      font-size: 0.77rem;
+      line-height: 1.35;
+    }
+
+    .bottom-right {
+      bottom: 12px;
+      right: 12px;
+      padding: 9px 10px;
+      font-size: 0.76rem;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 480px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 5px;
+      transform: translateY(1px);
+    }
+
+    .dot-high { background: #22c55e; }
+    .dot-mid { background: #f59e0b; }
+    .dot-low { background: #ef4444; }
+
+    .map-style {
+      min-width: 150px;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: #0b1220;
+      color: #dbe7fb;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+    }
+
+    body.theme-light .leaflet-popup-content-wrapper,
+    body.theme-light .leaflet-popup-tip {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: rgba(71, 85, 105, 0.25);
+    }
+
+    .app.sidebar-collapsed .hide-on-collapse,
+    .app.sidebar-collapsed .panel,
+    .app.sidebar-collapsed .footer-note {
+      display: none;
+    }
+
+    .app.sidebar-collapsed .brand-wrap {
+      justify-content: center;
+      margin-top: 2px;
+    }
+
+    .app.sidebar-collapsed .brand .hide-on-collapse {
+      display: none;
+    }
+
+    .app.sidebar-collapsed .brand {
+      gap: 0;
+    }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: var(--sidebar-width, 390px) 1fr; }
     }
 
     @media (max-width: 980px) {
-      .wrap {
+      body { overflow: auto; }
+      .app {
         grid-template-columns: 1fr;
-        grid-template-rows: 58vh 42vh;
+        grid-template-rows: 56vh auto;
+        height: auto;
+        min-height: 100vh;
       }
       .sidebar {
         border-right: none;
         border-bottom: 1px solid var(--line);
       }
-      #map { height: 42vh; }
+      .map-wrap { height: 44vh; }
+      .results { max-height: 40vh; }
+      .results.favs { max-height: 25vh; }
+      .app.sidebar-collapsed { --sidebar-width: 100%; }
+      .app.sidebar-collapsed .panel,
+      .app.sidebar-collapsed .footer-note {
+        display: block;
+      }
+      .app.sidebar-collapsed .hide-on-collapse { display: initial; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div id="app" class="app">
     <aside class="sidebar">
-      <h1>Public Device Charger Finder</h1>
-      <div class="sub">
-        Find likely places to charge phones/laptops/tablets (non-EV).
+      <div class="brand-wrap">
+        <div class="brand">
+          <div class="logo" title="ChargeSpot Pro">⚡</div>
+          <div class="hide-on-collapse">
+            <h1>ChargeSpot Pro</h1>
+            <div class="subtitle">Enterprise-grade public charger finder</div>
+          </div>
+        </div>
+        <div class="row" style="margin:0; gap:6px;">
+          <button id="themeBtn" class="icon-btn" title="Toggle light/dark theme">🌓</button>
+          <button id="collapseBtn" class="icon-btn" title="Collapse sidebar">☰</button>
+        </div>
       </div>
 
-      <div class="box">
+      <div class="panel">
+        <div class="panel-title">
+          <span>Search Controls</span>
+          <span class="tiny">Auto-saved preferences</span>
+        </div>
+
         <div class="row">
           <label for="radiusKm">Radius (km)</label>
-          <input id="radiusKm" type="number" min="1" max="30" value="5" />
+          <input id="radiusKm" class="control" type="number" min="1" max="30" step="1" value="5"/>
 
           <label for="sortBy">Sort</label>
-          <select id="sortBy">
-            <option value="best">Best match</option>
+          <select id="sortBy" class="control">
+            <option value="best">Best Match</option>
             <option value="nearest">Nearest</option>
-            <option value="community">Community score</option>
+            <option value="community">Community Score</option>
+            <option value="confidence">Confidence</option>
           </select>
         </div>
 
         <div class="row">
-          <button id="locateBtn" class="btn-primary">Use My Location</button>
-          <button id="refreshBtn" class="btn-secondary">Refresh</button>
-          <button id="offlineBtn" class="btn-ghost">Load Offline Cache</button>
+          <label for="addressInput">Address</label>
+          <input id="addressInput" class="control" type="text" placeholder="e.g., 200 King St W, Toronto" />
+          <button id="useAddressBtn" class="btn btn-secondary">Use Address</button>
         </div>
 
         <div class="row">
-          <label><input id="open247Only" type="checkbox" /> 24/7 likely only</label>
-          <label><input id="showHeat" type="checkbox" checked /> Heat bubbles</label>
+          <button id="locateBtn" class="btn btn-primary">Use My Location</button>
+          <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+          <button id="offlineBtn" class="btn btn-ghost">Load Cache</button>
         </div>
 
-        <div class="hint">
-          Community votes/favorites are saved in your browser on this device.
+        <div class="toggle-grid">
+          <label class="toggle"><input id="open247Only" type="checkbox" /> 24/7 only</label>
+          <label class="toggle"><input id="showHeat" type="checkbox" checked /> Heat bubbles</label>
+          <label class="toggle"><input id="wifiOnly" type="checkbox" /> Wi-Fi likely</label>
+          <label class="toggle"><input id="highConfidenceOnly" type="checkbox" /> High confidence</label>
         </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div id="kpiTotal" class="v">0</div>
+            <div class="l">Matches</div>
+          </div>
+          <div class="kpi">
+            <div id="kpiHigh" class="v">0</div>
+            <div class="l">High confidence</div>
+          </div>
+          <div class="kpi">
+            <div id="kpiAvgDist" class="v">0.00 km</div>
+            <div class="l">Avg distance</div>
+          </div>
+        </div>
+
+        <div id="status" class="status">Use location or enter an address to begin.</div>
       </div>
 
-      <div class="box">
-        <label>Category filters</label>
-        <div class="chips" id="chips"></div>
+      <div class="panel">
+        <div class="panel-title">
+          <span>Category Filters</span>
+          <div class="row" style="margin:0; gap:6px;">
+            <button id="selectAllCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">All</button>
+            <button id="clearCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">None</button>
+          </div>
+        </div>
+        <div id="chips" class="chips"></div>
       </div>
 
-      <div class="status" id="status">Click “Use My Location” to start.</div>
-
-      <div class="sectionhead">
-        <span>Favorites</span>
-        <button id="clearFavBtn" class="btn-warn">Clear Favorites</button>
+      <div class="panel">
+        <div class="panel-title">
+          <span>Favorites</span>
+          <div class="row" style="margin:0; gap:6px;">
+            <button id="exportFavBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">Export</button>
+            <button id="importFavBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">Import</button>
+            <button id="clearFavBtn" class="btn btn-danger" style="padding:6px 8px; font-size:0.72rem;">Clear</button>
+            <input id="importFavFile" type="file" accept="application/json" style="display:none;" />
+          </div>
+        </div>
+        <div id="favList" class="results favs"></div>
       </div>
-      <div id="favList" class="results"></div>
 
-      <hr style="border:0; border-top:1px solid #1f2937; margin:12px 0;" />
-
-      <div class="sectionhead">
-        <span>Results</span>
-        <span class="tiny" id="count"></span>
+      <div class="panel">
+        <div class="list-head">
+          <span>Results</span>
+          <span class="tiny" id="count">0 match(es)</span>
+        </div>
+        <div id="results" class="results"></div>
       </div>
-      <div id="results" class="results"></div>
+
+      <div class="footer-note">© 2026 Athir Global Partners</div>
     </aside>
 
-    <main style="position:relative;">
-      <div class="topbar">
-        Data source: OpenStreetMap (via Overpass). No account needed.
+    <main class="map-wrap">
+      <div class="overlay top-right">
+        Data: OpenStreetMap via Overpass and Nominatim.
+        Community feedback, favorites, and settings are saved locally in your browser.
       </div>
+
+      <div class="overlay bottom-right">
+        <span><span class="legend-dot dot-high"></span>High confidence</span>
+        <span><span class="legend-dot dot-mid"></span>Likely</span>
+        <span><span class="legend-dot dot-low"></span>Possible</span>
+
+        <select id="mapStyleSelect" class="control map-style" title="Map style">
+          <option value="osm">OSM Standard</option>
+          <option value="cartoLight">Carto Light</option>
+          <option value="cartoDark">Carto Dark</option>
+          <option value="esri">Esri Streets</option>
+        </select>
+      </div>
+
       <div id="map"></div>
     </main>
   </div>
 
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
-  ></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // ---------------- Constants ----------------
+    // ========================
+    // Configuration
+    // ========================
     const CATS = [
-      { k: "cafe",    l: "Cafés",           m: t => ["cafe","restaurant","fast_food","food_court"].includes(t.amenity) },
-      { k: "library", l: "Libraries",       m: t => t.amenity === "library" },
-      { k: "campus",  l: "Campus",          m: t => ["college","university","school"].includes(t.amenity) },
-      { k: "cowork",  l: "Coworking",       m: t => ["coworking","co-working"].includes(t.office) },
-      { k: "transit", l: "Transit",         m: t => !!t.public_transport || t.railway === "station" || t.amenity === "bus_station" },
-      { k: "mall",    l: "Malls",           m: t => t.shop === "mall" || t.building === "retail" },
-      { k: "hotel",   l: "Hotels",          m: t => ["hotel","hostel"].includes(t.tourism) },
-      { k: "explicit",l: "Explicit outlets",m: t => "socket" in t || "socket:usb" in t || "charging" in t || "power_supply" in t || "outlet" in t }
+      { k: "cafe",    l: "Cafés",            m: t => ["cafe","restaurant","fast_food","food_court"].includes(t.amenity) },
+      { k: "library", l: "Libraries",        m: t => t.amenity === "library" },
+      { k: "campus",  l: "Campus",           m: t => ["college","university","school"].includes(t.amenity) },
+      { k: "cowork",  l: "Coworking",        m: t => ["coworking","co-working"].includes(t.office) },
+      { k: "transit", l: "Transit",          m: t => !!t.public_transport || t.railway === "station" || t.amenity === "bus_station" },
+      { k: "mall",    l: "Malls",            m: t => t.shop === "mall" || t.building === "retail" },
+      { k: "hotel",   l: "Hotels",           m: t => ["hotel","hostel"].includes(t.tourism) },
+      { k: "explicit",l: "Explicit outlets", m: t => "socket" in t || "socket:usb" in t || "charging" in t || "power_supply" in t || "outlet" in t }
     ];
 
     const LS = {
-      fav: "cdf_single_favs",
-      votes: "cdf_single_votes",
-      cache: "cdf_single_cache"
+      fav: "csp_final_favs",
+      votes: "csp_final_votes",
+      cache: "csp_final_cache",
+      settings: "csp_final_settings"
     };
 
-    // ---------------- State ----------------
+    const MAP_STYLES = {
+      osm: {
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        options: { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }
+      },
+      cartoLight: {
+        url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20, subdomains: "abcd" }
+      },
+      cartoDark: {
+        url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20, subdomains: "abcd" }
+      },
+      esri: {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        options: { attribution: "Tiles &copy; Esri", maxZoom: 19 }
+      }
+    };
+
+    // ========================
+    // State
+    // ========================
     let curLat = null, curLon = null;
     let all = [], shown = [];
     let selected = new Set(CATS.map(c => c.k));
 
-    // ---------------- Helpers ----------------
+    // ========================
+    // Helpers
+    // ========================
     const $ = id => document.getElementById(id);
 
     const esc = s => String(s ?? "")
@@ -337,6 +827,8 @@
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#39;");
+
+    const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
     function pj(key, fallback) {
       try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
@@ -370,15 +862,64 @@
         || t.amenity === "bus_station";
     }
 
-    // ---------------- Community votes (local-only) ----------------
-    function votes() {
-      return pj(LS.votes, {});
+    function hasWifi(t) {
+      return t.wifi === "yes" || t.internet_access === "yes" || t.internet_access === "wlan";
     }
 
-    function getVote(id) {
-      const v = votes()[id];
-      return v || { yes: 0, no: 0 };
+    function status(msg, isError = false) {
+      $("status").innerHTML = isError
+        ? `<span style="color:#fecaca">${esc(msg)}</span>`
+        : esc(msg);
     }
+
+    // ========================
+    // Local persistence
+    // ========================
+    function saveSettings() {
+      sj(LS.settings, {
+        radiusKm: Number($("radiusKm").value || 5),
+        sortBy: $("sortBy").value,
+        open247Only: $("open247Only").checked,
+        showHeat: $("showHeat").checked,
+        wifiOnly: $("wifiOnly").checked,
+        highConfidenceOnly: $("highConfidenceOnly").checked,
+        selectedCats: [...selected],
+        theme: document.body.classList.contains("theme-light") ? "light" : "dark",
+        sidebarCollapsed: $("#app").classList.contains("sidebar-collapsed"),
+        mapStyle: $("mapStyleSelect").value || "osm",
+        mapCenter: (curLat != null && curLon != null) ? [curLat, curLon] : null
+      });
+    }
+
+    function loadSettings() {
+      const s = pj(LS.settings, null);
+      if (!s) return;
+
+      if (Number.isFinite(s.radiusKm)) $("radiusKm").value = s.radiusKm;
+      if (s.sortBy) $("sortBy").value = s.sortBy;
+      $("open247Only").checked = !!s.open247Only;
+      $("showHeat").checked = s.showHeat !== false;
+      $("wifiOnly").checked = !!s.wifiOnly;
+      $("highConfidenceOnly").checked = !!s.highConfidenceOnly;
+
+      if (Array.isArray(s.selectedCats) && s.selectedCats.length) {
+        selected = new Set(s.selectedCats.filter(k => CATS.some(c => c.k === k)));
+      }
+
+      if (s.theme === "light") document.body.classList.add("theme-light");
+      if (s.sidebarCollapsed) $("#app").classList.add("sidebar-collapsed");
+      if (s.mapStyle && MAP_STYLES[s.mapStyle]) $("mapStyleSelect").value = s.mapStyle;
+      if (Array.isArray(s.mapCenter) && s.mapCenter.length === 2) {
+        curLat = Number(s.mapCenter[0]);
+        curLon = Number(s.mapCenter[1]);
+      }
+    }
+
+    // ========================
+    // Votes
+    // ========================
+    function votes() { return pj(LS.votes, {}); }
+    function getVote(id) { return votes()[id] || { yes: 0, no: 0 }; }
 
     function castVote(id, type) {
       const v = votes();
@@ -396,17 +937,70 @@
       return (v.yes - v.no) / t;
     }
 
-    // ---------------- Map ----------------
-    const map = L.map("map").setView([43.6532, -79.3832], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors"
-    }).addTo(map);
+    // ========================
+    // Ranking
+    // ========================
+    function scoreOSM(t) {
+      let s = 0;
+      ["socket","socket:usb","charging","power_supply","outlet"].forEach(k => { if (k in t) s += 4; });
+      if (["cafe","restaurant","fast_food","food_court"].includes(t.amenity)) s += 3;
+      if (["library","college","university","school"].includes(t.amenity)) s += 3;
+      if (["coworking","co-working"].includes(t.office)) s += 3;
+      if (t.shop === "mall" || t.building === "retail") s += 2;
+      if (["hotel","hostel"].includes(t.tourism)) s += 2;
+      if (t.public_transport || t.railway === "station" || t.amenity === "bus_station") s += 2;
+      if (hasWifi(t)) s += 1;
+      if (is247(t)) s += 1;
+      return s;
+    }
+
+    function confLevel(p) {
+      const adj = p.base + cScore(p.id) * 2;
+      if (adj >= 8) return "high";
+      if (adj >= 5) return "mid";
+      return "low";
+    }
+
+    function confLabel(p) {
+      const lvl = confLevel(p);
+      if (lvl === "high") return "High confidence";
+      if (lvl === "mid") return "Likely";
+      return "Possible";
+    }
+
+    function weightedRank(p) {
+      return p.base + cScore(p.id) * 2 - p.dist * 0.25 + (p.is247 ? 0.6 : 0) + (p.hasWifi ? 0.3 : 0);
+    }
+
+    // ========================
+    // Map
+    // ========================
+    const map = L.map("map", { zoomControl: true });
+    map.setView([43.6532, -79.3832], 12);
+
+    let tileLayer = null;
+    function setMapStyle(styleKey) {
+      if (!MAP_STYLES[styleKey]) styleKey = "osm";
+      const cfg = MAP_STYLES[styleKey];
+      if (tileLayer) map.removeLayer(tileLayer);
+      tileLayer = L.tileLayer(cfg.url, cfg.options).addTo(map);
+      saveSettings();
+    }
 
     let placeLayer = L.layerGroup().addTo(map);
     let heatLayer = L.layerGroup().addTo(map);
     let me = null, circle = null;
 
-    // ---------------- Favorites ----------------
+    function markerStyle(p) {
+      const level = confLevel(p);
+      if (level === "high") return { radius: 8, color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.32, weight: 1.4 };
+      if (level === "mid") return { radius: 7, color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.3, weight: 1.3 };
+      return { radius: 6, color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.28, weight: 1.2 };
+    }
+
+    // ========================
+    // Favorites
+    // ========================
     function favs() { return pj(LS.fav, []); }
     function isFav(id) { return favs().some(f => f.id === id); }
 
@@ -414,10 +1008,39 @@
       const fs = favs();
       const i = fs.findIndex(x => x.id === p.id);
       if (i >= 0) fs.splice(i, 1);
-      else fs.push({ id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist });
+      else fs.push({
+        id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist, savedAt: Date.now()
+      });
       sj(LS.fav, fs);
       renderFav();
       renderResults();
+    }
+
+    function exportFavs() {
+      const blob = new Blob([JSON.stringify({ exportedAt: Date.now(), favorites: favs() }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "chargespot-favorites.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importFavsFromFile(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const data = JSON.parse(String(r.result || "{}"));
+          const imported = Array.isArray(data.favorites) ? data.favorites : [];
+          if (!imported.length) throw new Error("No favorites found in file.");
+          sj(LS.fav, imported);
+          renderFav();
+          renderResults();
+          status(`Imported ${imported.length} favorite(s).`);
+        } catch (e) {
+          status(`Import failed: ${e.message || "Invalid JSON file."}`, true);
+        }
+      };
+      r.readAsText(file);
     }
 
     function renderFav() {
@@ -430,12 +1053,17 @@
         return;
       }
 
+      fs.sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
+
       fs.forEach(f => {
         const c = document.createElement("div");
         c.className = "card";
         c.innerHTML = `
-          <div class="title">${esc(f.name)}</div>
-          <div class="meta">${esc(f.type)} ${f.dist != null ? "• " + f.dist.toFixed(2) + " km" : ""}</div>
+          <div class="title-row">
+            <div class="title">${esc(f.name)}</div>
+            <span class="confidence conf-mid">Saved</span>
+          </div>
+          <div class="meta">${esc(f.type)} ${f.dist != null ? "• " + fmt.format(f.dist) + " km" : ""}</div>
           <div class="actions">
             <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "walking")}">Walk</a>
             <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "driving")}">Drive</a>
@@ -447,7 +1075,30 @@
       });
     }
 
-    // ---------------- OSM Fetch ----------------
+    // ========================
+    // Geocode & Fetch
+    // ========================
+    async function geocodeAddress(address) {
+      const q = String(address || "").trim();
+      if (!q) throw new Error("Please enter an address.");
+
+      const url = "https://nominatim.openstreetmap.org/search?" + new URLSearchParams({
+        q, format: "jsonv2", limit: "1", addressdetails: "1"
+      }).toString();
+
+      const res = await fetch(url, {
+        headers: { "Accept": "application/json", "User-Agent": "ChargeSpotPro/1.0" }
+      });
+      if (!res.ok) throw new Error(`Geocoding failed (${res.status})`);
+
+      const data = await res.json();
+      if (!Array.isArray(data) || !data.length) throw new Error("Address not found. Try a more specific address.");
+
+      const lat = Number(data[0].lat), lon = Number(data[0].lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error("Invalid coordinates returned.");
+      return { lat, lon, label: data[0].display_name || q };
+    }
+
     async function fetchOSM(lat, lon, km) {
       const r = Math.round(km * 1000);
       const q = `
@@ -478,23 +1129,8 @@ out center tags;`.trim();
       return data.elements || [];
     }
 
-    function scoreOSM(t) {
-      let s = 0;
-      ["socket","socket:usb","charging","power_supply","outlet"].forEach(k => { if (k in t) s += 4; });
-      if (["cafe","restaurant","fast_food","food_court"].includes(t.amenity)) s += 3;
-      if (["library","college","university","school"].includes(t.amenity)) s += 3;
-      if (["coworking","co-working"].includes(t.office)) s += 3;
-      if (t.shop === "mall" || t.building === "retail") s += 2;
-      if (["hotel","hostel"].includes(t.tourism)) s += 2;
-      if (t.public_transport || t.railway === "station" || t.amenity === "bus_station") s += 2;
-      if (t.wifi === "yes" || t.internet_access === "yes") s += 1;
-      if (is247(t)) s += 1;
-      return s;
-    }
-
     function normalize(elements, lat, lon) {
       const m = new Map();
-
       for (const e of elements) {
         const [la, lo] = ll(e);
         if (la == null || lo == null) continue;
@@ -505,67 +1141,71 @@ out center tags;`.trim();
         if (base < 2) continue;
 
         m.set(id, {
-          id,
-          lat: la,
-          lon: lo,
-          tags: t,
+          id, lat: la, lon: lo, tags: t,
           name: t.name || t.brand || "Unnamed place",
           type: t.amenity || t.shop || t.tourism || t.office || t.public_transport || t.railway || "place",
           base,
           dist: hav(lat, lon, la, lo),
           is247: is247(t),
+          hasWifi: hasWifi(t),
           tagsPreview: Object.entries(t)
             .filter(([k]) => [
               "amenity","shop","tourism","office","public_transport","railway",
-              "socket","socket:usb","charging","power_supply","outlet",
-              "opening_hours","wifi","internet_access"
+              "socket","socket:usb","charging","power_supply","outlet","opening_hours","wifi","internet_access"
             ].includes(k))
-            .slice(0, 6)
+            .slice(0, 8)
             .map(([k,v]) => `${k}:${v}`)
         });
       }
-
       return [...m.values()];
     }
 
-    function conf(p) {
-      const adj = p.base + cScore(p.id) * 2;
-      if (adj >= 8) return "High confidence";
-      if (adj >= 5) return "Likely";
-      return "Possible";
-    }
-
+    // ========================
+    // Renderers
+    // ========================
     function apply() {
       const sort = $("sortBy").value;
       const only247 = $("open247Only").checked;
+      const wifiOnly = $("wifiOnly").checked;
+      const highOnly = $("highConfidenceOnly").checked;
 
       shown = all.filter(p => {
         const cat = CATS.some(c => selected.has(c.k) && c.m(p.tags));
-        const f247 = !only247 || p.is247;
-        return cat && f247;
+        return cat
+          && (!only247 || p.is247)
+          && (!wifiOnly || p.hasWifi)
+          && (!highOnly || confLevel(p) === "high");
       });
 
       shown.sort((a, b) => {
         if (sort === "nearest") return a.dist - b.dist;
         if (sort === "community") return cScore(b.id) - cScore(a.id) || a.dist - b.dist;
-
-        // best
-        const aw = a.base + cScore(a.id) * 2 - a.dist * 0.25 + (a.is247 ? 0.6 : 0);
-        const bw = b.base + cScore(b.id) * 2 - b.dist * 0.25 + (b.is247 ? 0.6 : 0);
-        return bw - aw;
+        if (sort === "confidence") {
+          const lv = { high: 3, mid: 2, low: 1 };
+          return lv[confLevel(b)] - lv[confLevel(a)] || weightedRank(b) - weightedRank(a);
+        }
+        return weightedRank(b) - weightedRank(a);
       });
+    }
+
+    function updateKpis() {
+      $("kpiTotal").textContent = String(shown.length);
+      $("kpiHigh").textContent = String(shown.filter(p => confLevel(p) === "high").length);
+      const avg = shown.length ? shown.reduce((s,p) => s + p.dist, 0) / shown.length : 0;
+      $("kpiAvgDist").textContent = `${fmt.format(avg)} km`;
     }
 
     function renderHeat() {
       heatLayer.clearLayers();
       if (!$("showHeat").checked) return;
 
-      shown.slice(0, 120).forEach(p => {
+      shown.slice(0, 140).forEach(p => {
         const intensity = Math.max(0, Math.min(1, (p.base / 12) + (cScore(p.id) * 0.25)));
         L.circle([p.lat, p.lon], {
-          radius: 60 + intensity * 120,
+          radius: 70 + intensity * 150,
           weight: 0,
-          fillOpacity: 0.1 + intensity * 0.22
+          fillOpacity: 0.08 + intensity * 0.2,
+          fillColor: confLevel(p) === "high" ? "#22c55e" : confLevel(p) === "mid" ? "#f59e0b" : "#ef4444"
         }).addTo(heatLayer);
       });
     }
@@ -578,48 +1218,70 @@ out center tags;`.trim();
 
       const km = Number($("radiusKm").value || 5);
 
-      if (curLat != null) {
-        me = L.marker([curLat, curLon]).addTo(map).bindPopup("<b>You are here</b>");
-        circle = L.circle([curLat, curLon], { radius: km * 1000, fillOpacity: 0.06 }).addTo(map);
+      if (curLat != null && curLon != null) {
+        me = L.marker([curLat, curLon]).addTo(map).bindPopup("<b>Your selected location</b>");
+        circle = L.circle([curLat, curLon], {
+          radius: km * 1000,
+          fillOpacity: 0.05,
+          color: "#4f46e5",
+          weight: 1.2
+        }).addTo(map);
       }
 
-      shown.slice(0, 220).forEach(p => {
-        const r = Math.max(5, Math.min(10, p.base + (cScore(p.id) > 0 ? 1 : 0)));
+      shown.slice(0, 260).forEach(p => {
         const v = getVote(p.id);
-        L.circleMarker([p.lat, p.lon], { radius: r, weight: 1 }).addTo(placeLayer)
+        L.circleMarker([p.lat, p.lon], markerStyle(p))
+          .addTo(placeLayer)
           .bindPopup(`
-            <div style="min-width:220px">
-              <div style="font-weight:700">${esc(p.name)}</div>
-              <div style="font-size:12px;color:#475569">${esc(p.type)} • ${p.dist.toFixed(2)} km</div>
-              <div style="font-size:12px;color:#475569">${conf(p)} ${p.is247 ? "• 24/7 likely" : ""}</div>
-              <div style="font-size:12px;color:#475569">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
+            <div style="min-width:240px">
+              <div style="font-weight:800; margin-bottom:2px">${esc(p.name)}</div>
+              <div style="font-size:12px; color:#8ea3bf">${esc(p.type)} • ${fmt.format(p.dist)} km</div>
+              <div style="font-size:12px; color:#8ea3bf; margin-top:2px">${confLabel(p)}${p.is247 ? " • 24/7 likely" : ""}${p.hasWifi ? " • Wi-Fi likely" : ""}</div>
+              <div style="font-size:12px; color:#8ea3bf; margin-top:2px">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
             </div>
           `);
       });
 
       renderHeat();
 
-      if (curLat != null) {
-        const fg = L.featureGroup([me, circle, ...placeLayer.getLayers()]);
-        map.fitBounds(fg.getBounds().pad(0.2), { maxZoom: 15 });
+      if (curLat != null && curLon != null) {
+        const layers = [me, circle, ...placeLayer.getLayers()].filter(Boolean);
+        if (layers.length) {
+          const fg = L.featureGroup(layers);
+          const b = fg.getBounds();
+          if (b.isValid()) map.fitBounds(b.pad(0.2), { maxZoom: 15 });
+        }
       }
+    }
+
+    function confidenceBadge(p) {
+      const lvl = confLevel(p);
+      if (lvl === "high") return `<span class="confidence conf-high">High</span>`;
+      if (lvl === "mid") return `<span class="confidence conf-mid">Likely</span>`;
+      return `<span class="confidence conf-low">Possible</span>`;
     }
 
     function cardHTML(p) {
       const v = getVote(p.id);
-
       return `
-        <div class="title">${esc(p.name)}</div>
-        <div class="meta">${esc(p.type)} • ${p.dist.toFixed(2)} km • ${conf(p)} ${p.is247 ? "• 24/7 likely" : ""}</div>
-        <div>${p.tagsPreview.slice(0,5).map(t => `<span class="pill">${esc(t)}</span>`).join("")}</div>
+        <div class="title-row">
+          <div class="title">${esc(p.name)}</div>
+          ${confidenceBadge(p)}
+        </div>
+        <div class="meta">
+          ${esc(p.type)} • ${fmt.format(p.dist)} km
+          ${p.is247 ? " • 24/7 likely" : ""}
+          ${p.hasWifi ? " • Wi-Fi likely" : ""}
+        </div>
+        <div>${p.tagsPreview.slice(0,6).map(t => `<span class="pill">${esc(t)}</span>`).join("")}</div>
         <div class="meta">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
         <div class="actions">
           <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "walking")}">Walk</a>
           <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "driving")}">Drive</a>
           <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "transit")}">Transit</a>
-          <button class="btn-ghost fav" data-id="${esc(p.id)}">${isFav(p.id) ? "★ Saved" : "☆ Save"}</button>
-          <button class="btn-good yes" data-id="${esc(p.id)}">I charged here</button>
-          <button class="btn-bad no" data-id="${esc(p.id)}">No outlet found</button>
+          <button class="pill-btn fav" data-id="${esc(p.id)}">${isFav(p.id) ? "★ Saved" : "☆ Save"}</button>
+          <button class="pill-btn ok yes" data-id="${esc(p.id)}">I charged here</button>
+          <button class="pill-btn bad no" data-id="${esc(p.id)}">No outlet</button>
         </div>
       `;
     }
@@ -628,13 +1290,14 @@ out center tags;`.trim();
       const box = $("results");
       box.innerHTML = "";
       $("count").textContent = `${shown.length} match(es)`;
+      updateKpis();
 
       if (!shown.length) {
-        box.innerHTML = `<div class="card"><div class="meta">No matches. Try bigger radius or fewer filters.</div></div>`;
+        box.innerHTML = `<div class="card"><div class="meta">No matches. Try a larger radius or fewer filters.</div></div>`;
         return;
       }
 
-      shown.slice(0, 90).forEach(p => {
+      shown.slice(0, 120).forEach(p => {
         const c = document.createElement("div");
         c.className = "card";
         c.innerHTML = cardHTML(p);
@@ -659,9 +1322,7 @@ out center tags;`.trim();
         btn.onclick = (e) => {
           e.stopPropagation();
           castVote(btn.dataset.id, "yes");
-          apply();
-          renderResults();
-          renderMap();
+          apply(); renderResults(); renderMap();
         };
       });
 
@@ -669,9 +1330,7 @@ out center tags;`.trim();
         btn.onclick = (e) => {
           e.stopPropagation();
           castVote(btn.dataset.id, "no");
-          apply();
-          renderResults();
-          renderMap();
+          apply(); renderResults(); renderMap();
         };
       });
     }
@@ -679,7 +1338,6 @@ out center tags;`.trim();
     function renderChips() {
       const box = $("chips");
       box.innerHTML = "";
-
       CATS.forEach(c => {
         const d = document.createElement("div");
         d.className = "chip" + (selected.has(c.k) ? " active" : "");
@@ -688,128 +1346,217 @@ out center tags;`.trim();
           if (selected.has(c.k)) selected.delete(c.k);
           else selected.add(c.k);
           d.classList.toggle("active");
-
-          apply();
-          renderResults();
-          renderMap();
+          saveSettings();
+          apply(); renderResults(); renderMap();
         };
         box.appendChild(d);
       });
     }
 
+    // ========================
+    // Cache
+    // ========================
     function saveCache() {
       sj(LS.cache, {
         savedAt: Date.now(),
-        lat: curLat,
-        lon: curLon,
+        lat: curLat, lon: curLon,
         radiusKm: Number($("radiusKm").value || 5),
-        items: all.slice(0, 300)
+        items: all.slice(0, 400)
       });
     }
 
     function loadCache() {
       const c = pj(LS.cache, null);
       if (!c || !c.items) {
-        $("status").textContent = "No offline cache found yet.";
+        status("No offline cache found yet.", true);
         return;
       }
-
       curLat = c.lat;
       curLon = c.lon;
       $("radiusKm").value = c.radiusKm;
       all = c.items;
 
-      apply();
-      renderResults();
-      renderMap();
-
-      $("status").textContent = `Loaded offline cache from ${new Date(c.savedAt).toLocaleString()}.`;
+      apply(); renderResults(); renderMap();
+      saveSettings();
+      status(`Loaded offline cache from ${new Date(c.savedAt).toLocaleString()}.`);
     }
 
+    // ========================
+    // Search flow
+    // ========================
     async function search() {
       if (curLat == null || curLon == null) {
-        $("status").textContent = "Please enable location first.";
+        status("Enable location or enter an address first.", true);
         return;
       }
 
       const km = Number($("radiusKm").value || 5);
       if (!Number.isFinite(km) || km < 1 || km > 30) {
-        $("status").textContent = "Radius must be between 1 and 30 km.";
+        status("Radius must be between 1 and 30 km.", true);
         return;
       }
 
       $("locateBtn").disabled = true;
       $("refreshBtn").disabled = true;
-      $("status").textContent = "Searching nearby places...";
+      $("useAddressBtn").disabled = true;
+      status("Searching nearby places...");
 
       try {
         const raw = await fetchOSM(curLat, curLon, km);
         all = normalize(raw, curLat, curLon);
-
         saveCache();
+        saveSettings();
 
         apply();
         renderResults();
         renderMap();
 
-        $("status").textContent = `Found ${shown.length} matches within ${km} km.`;
+        status(`Found ${shown.length} matches within ${km} km.`);
       } catch (e) {
         console.error(e);
-        $("status").innerHTML = `<span style="color:var(--danger)">Search failed. Try again or load offline cache.</span>`;
+        status("Search failed. Try again or load cache.", true);
       } finally {
         $("locateBtn").disabled = false;
         $("refreshBtn").disabled = false;
+        $("useAddressBtn").disabled = false;
       }
     }
 
     function locate() {
       if (!navigator.geolocation) {
-        $("status").textContent = "Geolocation is not supported by this browser.";
+        status("Geolocation is not supported by this browser.", true);
         return;
       }
-
-      $("status").textContent = "Getting your location...";
+      status("Getting your location...");
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           curLat = pos.coords.latitude;
           curLon = pos.coords.longitude;
+          map.setView([curLat, curLon], 14);
           search();
         },
         (err) => {
           console.error(err);
-          $("status").textContent = "Location denied/unavailable. You can still load offline cache.";
+          status("Location denied or unavailable. Enter an address instead.", true);
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
       );
     }
 
-    // ---------------- Events ----------------
-    $("locateBtn").onclick = locate;
-    $("refreshBtn").onclick = search;
-    $("offlineBtn").onclick = loadCache;
+    async function useAddress() {
+      const addr = $("addressInput").value.trim();
+      if (!addr) {
+        status("Please enter an address.", true);
+        return;
+      }
 
-    $("sortBy").onchange = () => {
-      apply(); renderResults(); renderMap();
-    };
+      $("useAddressBtn").disabled = true;
+      $("locateBtn").disabled = true;
+      $("refreshBtn").disabled = true;
+      status("Looking up address...");
 
-    $("open247Only").onchange = () => {
-      apply(); renderResults(); renderMap();
-    };
+      try {
+        const { lat, lon, label } = await geocodeAddress(addr);
+        curLat = lat;
+        curLon = lon;
+        map.setView([curLat, curLon], 14);
+        status(`Using address: ${label}`);
+        await search();
+      } catch (e) {
+        console.error(e);
+        status(e.message || "Could not use that address.", true);
+      } finally {
+        $("useAddressBtn").disabled = false;
+        $("locateBtn").disabled = false;
+        $("refreshBtn").disabled = false;
+      }
+    }
 
-    $("showHeat").onchange = () => {
-      renderMap();
-    };
+    // ========================
+    // UI Controls
+    // ========================
+    function toggleTheme() {
+      document.body.classList.toggle("theme-light");
+      saveSettings();
+    }
 
-    $("clearFavBtn").onclick = () => {
-      localStorage.removeItem(LS.fav);
-      renderFav();
-      renderResults();
-    };
+    function toggleSidebar() {
+      $("#app").classList.toggle("sidebar-collapsed");
+      setTimeout(() => map.invalidateSize(), 220);
+      saveSettings();
+    }
 
-    // ---------------- Init ----------------
+    function registerEvents() {
+      $("locateBtn").onclick = locate;
+      $("refreshBtn").onclick = search;
+      $("offlineBtn").onclick = loadCache;
+      $("useAddressBtn").onclick = useAddress;
+
+      $("addressInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); useAddress(); }
+      });
+
+      $("sortBy").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
+      $("open247Only").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
+      $("showHeat").onchange = () => { saveSettings(); renderMap(); };
+      $("wifiOnly").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
+      $("highConfidenceOnly").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
+      $("radiusKm").onchange = saveSettings;
+
+      $("clearFavBtn").onclick = () => {
+        localStorage.removeItem(LS.fav);
+        renderFav(); renderResults();
+        status("Favorites cleared.");
+      };
+
+      $("exportFavBtn").onclick = exportFavs;
+      $("importFavBtn").onclick = () => $("importFavFile").click();
+      $("importFavFile").addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file) importFavsFromFile(file);
+        e.target.value = "";
+      });
+
+      $("selectAllCatsBtn").onclick = () => {
+        selected = new Set(CATS.map(c => c.k));
+        renderChips(); saveSettings();
+        apply(); renderResults(); renderMap();
+      };
+
+      $("clearCatsBtn").onclick = () => {
+        selected = new Set();
+        renderChips(); saveSettings();
+        apply(); renderResults(); renderMap();
+      };
+
+      $("themeBtn").onclick = toggleTheme;
+      $("collapseBtn").onclick = toggleSidebar;
+
+      $("mapStyleSelect").onchange = () => {
+        setMapStyle($("mapStyleSelect").value);
+      };
+
+      window.addEventListener("resize", () => map.invalidateSize());
+    }
+
+    // ========================
+    // Init
+    // ========================
     (function init() {
+      loadSettings();
+      setMapStyle($("mapStyleSelect").value || "osm");
+      registerEvents();
       renderChips();
       renderFav();
+
+      // If settings had previous center, place map there
+      if (curLat != null && curLon != null) {
+        map.setView([curLat, curLon], 13);
+      }
+
+      apply();
+      renderResults();
+      renderMap();
     })();
   </script>
 </body>
