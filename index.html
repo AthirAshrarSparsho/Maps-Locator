@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChargeSpot Pro | Premium Public Device Charger Finder</title>
-  <meta name="description" content="Find premium-ranked public places to charge phones, tablets, and laptops." />
+  <title>Public Charging Outlet Finder</title>
+  <meta name="description" content="Find top-ranked public places to charge phones, tablets, and laptops." />
   <meta name="theme-color" content="#0b1220" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 10L18 35h12l-2 19 18-25H34z' fill='%23061116'/%3E%3C/svg%3E" />
 
@@ -18,44 +18,36 @@
       --bg: #070b14;
       --bg2: #080f1d;
       --panel: rgba(10, 16, 32, 0.86);
-      --panel-solid: #0d1529;
       --card: rgba(15, 23, 42, 0.78);
       --line: rgba(148, 163, 184, 0.22);
       --line-strong: rgba(148, 163, 184, 0.4);
       --text: #e2e8f0;
       --muted: #93a4bf;
-      --muted-2: #7e8ba3;
       --accent: #5eead4;
-      --accent-2: #22d3ee;
       --primary: #4f46e5;
       --ok: #22c55e;
       --warn: #f59e0b;
       --bad: #ef4444;
       --chip: #1a2440;
       --radius: 16px;
-      --radius-sm: 12px;
       --shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
       --shadow-soft: 0 4px 16px rgba(2, 6, 23, 0.35);
       --gradient:
         radial-gradient(1200px 500px at 0% -20%, rgba(34, 211, 238, 0.22), transparent 50%),
         radial-gradient(900px 460px at 100% 0%, rgba(79, 70, 229, 0.24), transparent 48%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
-      --map-filter: none;
     }
 
     body.theme-light {
       --bg: #f1f5f9;
       --bg2: #e2e8f0;
-      --panel: rgba(255, 255, 255, 0.84);
-      --panel-solid: #ffffff;
-      --card: rgba(255, 255, 255, 0.85);
+      --panel: rgba(255, 255, 255, 0.86);
+      --card: rgba(255, 255, 255, 0.9);
       --line: rgba(71, 85, 105, 0.2);
       --line-strong: rgba(71, 85, 105, 0.35);
       --text: #0f172a;
       --muted: #475569;
-      --muted-2: #64748b;
       --accent: #0ea5e9;
-      --accent-2: #14b8a6;
       --primary: #4f46e5;
       --chip: #eef2ff;
       --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
@@ -64,7 +56,6 @@
         radial-gradient(1100px 480px at 0% -20%, rgba(14, 165, 233, 0.18), transparent 50%),
         radial-gradient(900px 420px at 100% 0%, rgba(99, 102, 241, 0.16), transparent 52%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
-      --map-filter: saturate(1.05) contrast(1.02);
     }
 
     * { box-sizing: border-box; }
@@ -86,9 +77,7 @@
       transition: grid-template-columns 0.22s ease;
     }
 
-    .app.sidebar-collapsed {
-      --sidebar-width: 74px;
-    }
+    .app.sidebar-collapsed { --sidebar-width: 74px; }
 
     .sidebar {
       border-right: 1px solid var(--line);
@@ -98,12 +87,6 @@
       overflow: auto;
       padding: 12px;
       position: relative;
-      transition: padding 0.2s ease;
-    }
-
-    .app.sidebar-collapsed .sidebar {
-      padding: 10px 8px;
-      overflow-x: hidden;
     }
 
     .brand-wrap {
@@ -166,6 +149,7 @@
       flex-shrink: 0;
     }
 
+    body.theme-light .icon-btn { background: rgba(255,255,255,0.85); }
     .icon-btn:hover { filter: brightness(1.08); }
 
     .panel {
@@ -175,17 +159,15 @@
       padding: 12px;
       margin-bottom: 10px;
       box-shadow: var(--shadow-soft);
-      transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
     body.theme-light .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.82));
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.86));
     }
 
     .panel-title {
       font-size: 0.82rem;
-      font-weight: 700;
-      color: color-mix(in srgb, var(--text) 86%, #9db2cc 14%);
+      font-weight: 800;
       letter-spacing: 0.2px;
       margin-bottom: 9px;
       display: flex;
@@ -201,17 +183,16 @@
       flex-wrap: wrap;
       margin-bottom: 8px;
     }
-
     .row:last-child { margin-bottom: 0; }
 
     label {
       font-size: 0.78rem;
-      color: color-mix(in srgb, var(--text) 82%, var(--muted) 18%);
       letter-spacing: 0.2px;
+      color: color-mix(in srgb, var(--text) 82%, var(--muted) 18%);
     }
 
     .control {
-      background: rgba(9, 14, 26, 0.9);
+      background: rgba(9, 14, 26, 0.92);
       color: var(--text);
       border: 1px solid var(--line-strong);
       border-radius: 10px;
@@ -221,18 +202,11 @@
       transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
     }
 
-    body.theme-light .control {
-      background: rgba(255,255,255,0.88);
-    }
+    body.theme-light .control { background: rgba(255,255,255,0.95); }
 
     .control:focus {
-      border-color: color-mix(in srgb, var(--accent) 80%, white 20%);
+      border-color: color-mix(in srgb, var(--accent) 78%, white 22%);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent 76%);
-      background: rgba(6, 12, 22, 0.95);
-    }
-
-    body.theme-light .control:focus {
-      background: rgba(255,255,255,0.98);
     }
 
     input[type="number"].control { width: 92px; }
@@ -244,10 +218,8 @@
       border: 1px solid transparent;
       border-radius: 11px;
       padding: 9px 11px;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 0.79rem;
-      color: #e8f1ff;
-      background: #1b2742;
       transition: transform .08s ease, filter .16s ease, border-color .16s ease, background .16s ease;
       white-space: nowrap;
     }
@@ -301,18 +273,12 @@
       gap: 8px;
       align-items: center;
       font-size: 0.79rem;
-      color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
-      background: rgba(15, 23, 42, 0.64);
+      background: rgba(15, 23, 42, 0.55);
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 7px 9px;
     }
-
-    body.theme-light .toggle {
-      background: rgba(248, 250, 252, 0.95);
-    }
-
-    .toggle input { transform: translateY(0.5px); }
+    body.theme-light .toggle { background: rgba(248, 250, 252, 0.95); }
 
     .chips {
       display: flex;
@@ -324,13 +290,13 @@
     .chip {
       border: 1px solid rgba(148, 163, 184, 0.28);
       background: var(--chip);
-      color: color-mix(in srgb, var(--text) 88%, #c5d5ff 12%);
       border-radius: 999px;
       padding: 6px 10px;
       font-size: 0.77rem;
       cursor: pointer;
       user-select: none;
       transition: all .15s ease;
+      color: color-mix(in srgb, var(--text) 88%, #c5d5ff 12%);
     }
 
     .chip:hover { border-color: rgba(148, 163, 184, 0.56); }
@@ -351,27 +317,16 @@
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 8px 9px;
-      background: rgba(9, 14, 26, 0.72);
+      background: rgba(9, 14, 26, 0.7);
     }
+    body.theme-light .kpi { background: rgba(255,255,255,0.95); }
 
-    body.theme-light .kpi { background: rgba(255,255,255,0.92); }
-
-    .kpi .v {
-      font-size: 0.96rem;
-      font-weight: 800;
-      color: var(--text);
-      line-height: 1.1;
-    }
-
-    .kpi .l {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
+    .kpi .v { font-size: 0.96rem; font-weight: 900; line-height: 1.1; }
+    .kpi .l { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
     .status {
       border: 1px solid var(--line);
-      background: rgba(8, 13, 24, 0.72);
+      background: rgba(8, 13, 24, 0.7);
       border-radius: 12px;
       padding: 9px 10px;
       font-size: 0.81rem;
@@ -381,7 +336,6 @@
       align-items: center;
       margin-top: 8px;
     }
-
     body.theme-light .status { background: rgba(255,255,255,0.95); }
 
     .list-head {
@@ -390,7 +344,6 @@
       justify-content: space-between;
       margin: 6px 2px;
       font-size: 0.82rem;
-      color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
       gap: 8px;
     }
 
@@ -406,38 +359,23 @@
       padding-right: 2px;
     }
 
-    .results.favs {
-      max-height: 22vh;
-    }
+    .results.favs { max-height: 22vh; }
 
     .card {
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(11, 18, 32, 0.75));
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(11, 18, 32, 0.76));
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 10px;
       box-shadow: var(--shadow-soft);
       transition: border-color .14s ease, transform .08s ease;
     }
-
     body.theme-light .card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.94));
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.94));
     }
-
     .card:hover { border-color: rgba(148, 163, 184, 0.52); }
 
-    .title-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: start;
-    }
-
-    .title {
-      font-size: 0.92rem;
-      font-weight: 800;
-      color: var(--text);
-      line-height: 1.24;
-    }
+    .title-row { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+    .title { font-size: 0.92rem; font-weight: 900; line-height: 1.24; }
 
     .confidence {
       font-size: 0.7rem;
@@ -446,17 +384,11 @@
       border: 1px solid transparent;
       white-space: nowrap;
     }
-
     .conf-high { background: rgba(34, 197, 94, 0.13); border-color: rgba(34, 197, 94, 0.4); color: #bbf7d0; }
     .conf-mid  { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
     .conf-low  { background: rgba(239, 68, 68, 0.11); border-color: rgba(239, 68, 68, 0.35); color: #fecaca; }
 
-    .meta {
-      font-size: 0.77rem;
-      color: var(--muted);
-      line-height: 1.35;
-      margin: 4px 0 6px;
-    }
+    .meta { font-size: 0.77rem; color: var(--muted); line-height: 1.35; margin: 4px 0 6px; }
 
     .pill {
       display: inline-block;
@@ -466,19 +398,13 @@
       font-size: 0.7rem;
       margin-right: 5px;
       margin-bottom: 5px;
-      color: color-mix(in srgb, var(--text) 82%, #a8b9ce 18%);
       text-decoration: none;
       background: rgba(15, 23, 42, 0.55);
+      color: color-mix(in srgb, var(--text) 82%, #a8b9ce 18%);
     }
-
     body.theme-light .pill { background: rgba(248,250,252,0.95); }
 
-    .actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 6px;
-    }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 
     .pill-btn {
       cursor: pointer;
@@ -489,9 +415,7 @@
       background: rgba(15, 23, 42, 0.58);
       color: color-mix(in srgb, var(--text) 86%, #b3c5e2 14%);
     }
-
     body.theme-light .pill-btn { background: rgba(248,250,252,0.95); }
-
     .pill-btn.ok { border-color: rgba(34, 197, 94, 0.5); color: #bbf7d0; }
     .pill-btn.bad { border-color: rgba(239, 68, 68, 0.5); color: #fecaca; }
 
@@ -506,20 +430,10 @@
       font-size: 0.76rem;
       letter-spacing: 0.2px;
     }
-
     body.theme-light .footer-note { background: rgba(255,255,255,0.95); }
 
-    .map-wrap {
-      position: relative;
-      height: 100vh;
-      min-width: 0;
-    }
-
-    #map {
-      height: 100%;
-      width: 100%;
-      filter: var(--map-filter);
-    }
+    .map-wrap { position: relative; height: 100vh; min-width: 0; }
+    #map { height: 100%; width: 100%; } /* IMPORTANT: no CSS filter here */
 
     .overlay {
       position: absolute;
@@ -531,7 +445,6 @@
       border-radius: 12px;
       color: color-mix(in srgb, var(--text) 84%, #b9cbe2 16%);
     }
-
     body.theme-light .overlay {
       background: rgba(255,255,255,0.9);
       color: #334155;
@@ -540,7 +453,7 @@
     .top-right {
       top: 12px;
       right: 12px;
-      max-width: 440px;
+      max-width: 470px;
       padding: 8px 10px;
       font-size: 0.77rem;
       line-height: 1.35;
@@ -555,7 +468,7 @@
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
-      max-width: 480px;
+      max-width: 520px;
     }
 
     .legend-dot {
@@ -566,14 +479,11 @@
       margin-right: 5px;
       transform: translateY(1px);
     }
-
     .dot-high { background: #22c55e; }
     .dot-mid { background: #f59e0b; }
     .dot-low { background: #ef4444; }
 
-    .map-style {
-      min-width: 150px;
-    }
+    .map-style { min-width: 150px; }
 
     .leaflet-popup-content-wrapper,
     .leaflet-popup-tip {
@@ -581,7 +491,6 @@
       color: #dbe7fb;
       border: 1px solid rgba(148, 163, 184, 0.28);
     }
-
     body.theme-light .leaflet-popup-content-wrapper,
     body.theme-light .leaflet-popup-tip {
       background: #ffffff;
@@ -589,28 +498,13 @@
       border-color: rgba(71, 85, 105, 0.25);
     }
 
-    .app.sidebar-collapsed .hide-on-collapse,
+    .app.sidebar-collapsed { grid-template-columns: 74px 1fr; }
     .app.sidebar-collapsed .panel,
-    .app.sidebar-collapsed .footer-note {
-      display: none;
-    }
-
-    .app.sidebar-collapsed .brand-wrap {
-      justify-content: center;
-      margin-top: 2px;
-    }
-
-    .app.sidebar-collapsed .brand .hide-on-collapse {
-      display: none;
-    }
-
-    .app.sidebar-collapsed .brand {
-      gap: 0;
-    }
-
-    @media (max-width: 1180px) {
-      .app { grid-template-columns: var(--sidebar-width, 390px) 1fr; }
-    }
+    .app.sidebar-collapsed .footer-note,
+    .app.sidebar-collapsed .hide-on-collapse { display: none; }
+    .app.sidebar-collapsed .brand-wrap { justify-content: center; }
+    .app.sidebar-collapsed .brand { gap: 0; }
+    .app.sidebar-collapsed .sidebar { padding: 10px 8px; overflow-x: hidden; }
 
     @media (max-width: 980px) {
       body { overflow: auto; }
@@ -627,24 +521,25 @@
       .map-wrap { height: 44vh; }
       .results { max-height: 40vh; }
       .results.favs { max-height: 25vh; }
-      .app.sidebar-collapsed { --sidebar-width: 100%; }
+
+      /* On mobile: keep sidebar expanded */
+      .app.sidebar-collapsed { grid-template-columns: 1fr; }
       .app.sidebar-collapsed .panel,
-      .app.sidebar-collapsed .footer-note {
-        display: block;
-      }
-      .app.sidebar-collapsed .hide-on-collapse { display: initial; }
+      .app.sidebar-collapsed .footer-note,
+      .app.sidebar-collapsed .hide-on-collapse { display: block; }
     }
   </style>
 </head>
+
 <body>
   <div id="app" class="app">
     <aside class="sidebar">
       <div class="brand-wrap">
         <div class="brand">
-          <div class="logo" title="ChargeSpot Pro">⚡</div>
+          <div class="logo" title="Public Charging Outlet Finder">⚡</div>
           <div class="hide-on-collapse">
-            <h1>ChargeSpot Pro</h1>
-            <div class="subtitle">Enterprise-grade public charger finder</div>
+            <h1>Public Charging Outlet Finder</h1>
+            <div class="subtitle">Find likely charging outlets around you</div>
           </div>
         </div>
         <div class="row" style="margin:0; gap:6px;">
@@ -655,8 +550,8 @@
 
       <div class="panel">
         <div class="panel-title">
-          <span>Search Controls</span>
-          <span class="tiny">Auto-saved preferences</span>
+          <span>Search</span>
+          <span class="tiny">Settings auto-save</span>
         </div>
 
         <div class="row">
@@ -711,7 +606,7 @@
 
       <div class="panel">
         <div class="panel-title">
-          <span>Category Filters</span>
+          <span>Categories</span>
           <div class="row" style="margin:0; gap:6px;">
             <button id="selectAllCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">All</button>
             <button id="clearCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">None</button>
@@ -746,8 +641,7 @@
 
     <main class="map-wrap">
       <div class="overlay top-right">
-        Data: OpenStreetMap via Overpass and Nominatim.
-        Community feedback, favorites, and settings are saved locally in your browser.
+        Data: OpenStreetMap via Overpass + Nominatim. Votes/favorites/settings are saved locally on your device.
       </div>
 
       <div class="overlay bottom-right">
@@ -768,6 +662,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
   <script>
     // ========================
     // Configuration
@@ -784,24 +679,25 @@
     ];
 
     const LS = {
-      fav: "csp_final_favs",
-      votes: "csp_final_votes",
-      cache: "csp_final_cache",
-      settings: "csp_final_settings"
+      fav: "csp_ultimate_favs",
+      votes: "csp_ultimate_votes",
+      cache: "csp_ultimate_cache",
+      settings: "csp_ultimate_settings"
     };
 
+    // Stable map styles
     const MAP_STYLES = {
       osm: {
         url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         options: { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }
       },
       cartoLight: {
-        url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20, subdomains: "abcd" }
+        url: "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20 }
       },
       cartoDark: {
-        url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20, subdomains: "abcd" }
+        url: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20 }
       },
       esri: {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
@@ -909,6 +805,7 @@
       if (s.theme === "light") document.body.classList.add("theme-light");
       if (s.sidebarCollapsed) $("#app").classList.add("sidebar-collapsed");
       if (s.mapStyle && MAP_STYLES[s.mapStyle]) $("mapStyleSelect").value = s.mapStyle;
+
       if (Array.isArray(s.mapCenter) && s.mapCenter.length === 2) {
         curLat = Number(s.mapCenter[0]);
         curLon = Number(s.mapCenter[1]);
@@ -973,18 +870,55 @@
     }
 
     // ========================
-    // Map
+    // Map (reliable)
     // ========================
-    const map = L.map("map", { zoomControl: true });
-    map.setView([43.6532, -79.3832], 12);
+    const map = L.map("map", { zoomControl: true }).setView([43.6532, -79.3832], 12);
 
-    let tileLayer = null;
+    const guaranteedOSM = L.tileLayer(MAP_STYLES.osm.url, MAP_STYLES.osm.options).addTo(map);
+    let currentBaseLayer = guaranteedOSM;
+
     function setMapStyle(styleKey) {
       if (!MAP_STYLES[styleKey]) styleKey = "osm";
       const cfg = MAP_STYLES[styleKey];
-      if (tileLayer) map.removeLayer(tileLayer);
-      tileLayer = L.tileLayer(cfg.url, cfg.options).addTo(map);
-      saveSettings();
+
+      if (styleKey === "osm") {
+        if (!map.hasLayer(guaranteedOSM)) guaranteedOSM.addTo(map);
+        if (currentBaseLayer && currentBaseLayer !== guaranteedOSM && map.hasLayer(currentBaseLayer)) {
+          map.removeLayer(currentBaseLayer);
+        }
+        currentBaseLayer = guaranteedOSM;
+        saveSettings();
+        return;
+      }
+
+      const candidate = L.tileLayer(cfg.url, cfg.options);
+      let swapped = false;
+
+      const finalizeSwap = () => {
+        if (swapped) return;
+        swapped = true;
+        if (currentBaseLayer && map.hasLayer(currentBaseLayer)) map.removeLayer(currentBaseLayer);
+        currentBaseLayer = candidate;
+        saveSettings();
+      };
+
+      candidate.once("load", finalizeSwap);
+
+      candidate.once("tileerror", () => {
+        if (!map.hasLayer(guaranteedOSM)) guaranteedOSM.addTo(map);
+        if (map.hasLayer(candidate)) map.removeLayer(candidate);
+        if (currentBaseLayer && currentBaseLayer !== guaranteedOSM && map.hasLayer(currentBaseLayer)) {
+          map.removeLayer(currentBaseLayer);
+        }
+        currentBaseLayer = guaranteedOSM;
+        $("mapStyleSelect").value = "osm";
+        saveSettings();
+      });
+
+      candidate.addTo(map);
+      setTimeout(() => {
+        if (!swapped && map.hasLayer(candidate)) finalizeSwap();
+      }, 1400);
     }
 
     let placeLayer = L.layerGroup().addTo(map);
@@ -1008,9 +942,7 @@
       const fs = favs();
       const i = fs.findIndex(x => x.id === p.id);
       if (i >= 0) fs.splice(i, 1);
-      else fs.push({
-        id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist, savedAt: Date.now()
-      });
+      else fs.push({ id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist, savedAt: Date.now() });
       sj(LS.fav, fs);
       renderFav();
       renderResults();
@@ -1020,7 +952,7 @@
       const blob = new Blob([JSON.stringify({ exportedAt: Date.now(), favorites: favs() }, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "chargespot-favorites.json";
+      a.download = "public-charging-favorites.json";
       a.click();
       URL.revokeObjectURL(a.href);
     }
@@ -1076,7 +1008,7 @@
     }
 
     // ========================
-    // Geocode & Fetch
+    // Fetch / Geocode
     // ========================
     async function geocodeAddress(address) {
       const q = String(address || "").trim();
@@ -1087,7 +1019,7 @@
       }).toString();
 
       const res = await fetch(url, {
-        headers: { "Accept": "application/json", "User-Agent": "ChargeSpotPro/1.0" }
+        headers: { "Accept": "application/json", "User-Agent": "PublicChargingOutletFinder/1.0" }
       });
       if (!res.ok) throw new Error(`Geocoding failed (${res.status})`);
 
@@ -1161,7 +1093,7 @@ out center tags;`.trim();
     }
 
     // ========================
-    // Renderers
+    // Render pipeline
     // ========================
     function apply() {
       const sort = $("sortBy").value;
@@ -1234,7 +1166,7 @@ out center tags;`.trim();
           .addTo(placeLayer)
           .bindPopup(`
             <div style="min-width:240px">
-              <div style="font-weight:800; margin-bottom:2px">${esc(p.name)}</div>
+              <div style="font-weight:900; margin-bottom:2px">${esc(p.name)}</div>
               <div style="font-size:12px; color:#8ea3bf">${esc(p.type)} • ${fmt.format(p.dist)} km</div>
               <div style="font-size:12px; color:#8ea3bf; margin-top:2px">${confLabel(p)}${p.is247 ? " • 24/7 likely" : ""}${p.hasWifi ? " • Wi-Fi likely" : ""}</div>
               <div style="font-size:12px; color:#8ea3bf; margin-top:2px">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
@@ -1473,7 +1405,7 @@ out center tags;`.trim();
     }
 
     // ========================
-    // UI Controls
+    // UI controls
     // ========================
     function toggleTheme() {
       document.body.classList.toggle("theme-light");
@@ -1531,10 +1463,7 @@ out center tags;`.trim();
 
       $("themeBtn").onclick = toggleTheme;
       $("collapseBtn").onclick = toggleSidebar;
-
-      $("mapStyleSelect").onchange = () => {
-        setMapStyle($("mapStyleSelect").value);
-      };
+      $("mapStyleSelect").onchange = () => setMapStyle($("mapStyleSelect").value);
 
       window.addEventListener("resize", () => map.invalidateSize());
     }
@@ -1544,15 +1473,15 @@ out center tags;`.trim();
     // ========================
     (function init() {
       loadSettings();
+
+      // apply saved map style after settings load
       setMapStyle($("mapStyleSelect").value || "osm");
+
       registerEvents();
       renderChips();
       renderFav();
 
-      // If settings had previous center, place map there
-      if (curLat != null && curLon != null) {
-        map.setView([curLat, curLon], 13);
-      }
+      if (curLat != null && curLon != null) map.setView([curLat, curLon], 13);
 
       apply();
       renderResults();
