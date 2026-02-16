@@ -2,1682 +2,1854 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Public Charging Outlet Finder</title>
-  <meta name="description" content="Find top-ranked public places to charge phones, tablets, and laptops." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clinic Wait Time Finder</title>
+  <meta name="description" content="Find walk-in clinics near you. Compare wait time, distance, hours, services, and get directions." />
   <meta name="theme-color" content="#0b1220" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2322d3ee'/%3E%3Cstop offset='100%25' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='16' fill='url(%23g)'/%3E%3Cpath d='M36 10L18 35h12l-2 19 18-25H34z' fill='%23061116'/%3E%3C/svg%3E" />
 
-  <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="preconnect" href="https://overpass-api.de" />
-  <link rel="preconnect" href="https://nominatim.openstreetmap.org" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
 
   <style>
-    :root {
-      --bg: #070b14;
-      --bg2: #080f1d;
-      --panel: rgba(10, 16, 32, 0.86);
-      --card: rgba(15, 23, 42, 0.78);
-      --line: rgba(148, 163, 184, 0.22);
-      --line-strong: rgba(148, 163, 184, 0.4);
-      --text: #e2e8f0;
-      --muted: #93a4bf;
-      --accent: #5eead4;
-      --primary: #4f46e5;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --chip: #1a2440;
-      --radius: 16px;
-      --shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
-      --shadow-soft: 0 4px 16px rgba(2, 6, 23, 0.35);
-      --gradient:
-        radial-gradient(1200px 500px at 0% -20%, rgba(34, 211, 238, 0.22), transparent 50%),
-        radial-gradient(900px 460px at 100% 0%, rgba(79, 70, 229, 0.24), transparent 48%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+    :root{
+      --bg0:#050816;
+      --bg1:#070b1d;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.04);
+      --stroke: rgba(255,255,255,.12);
+      --stroke2: rgba(255,255,255,.18);
+      --text:#eaf0ff;
+      --muted:#a7b2cc;
+      --shadow: 0 24px 80px rgba(0,0,0,.55);
+      --shadow2: 0 14px 40px rgba(0,0,0,.38);
+      --radius: 20px;
+
+      /* vivid gradients */
+      --c1:#22d3ee; /* cyan */
+      --c2:#a78bfa; /* purple */
+      --c3:#34d399; /* green */
+      --c4:#fb7185; /* rose */
+      --c5:#fbbf24; /* amber */
+
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
-    body.theme-light {
-      --bg: #f1f5f9;
-      --bg2: #e2e8f0;
-      --panel: rgba(255, 255, 255, 0.86);
-      --card: rgba(255, 255, 255, 0.9);
-      --line: rgba(71, 85, 105, 0.2);
-      --line-strong: rgba(71, 85, 105, 0.35);
-      --text: #0f172a;
-      --muted: #475569;
-      --accent: #0ea5e9;
-      --primary: #4f46e5;
-      --chip: #eef2ff;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-      --shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.08);
-      --gradient:
-        radial-gradient(1100px 480px at 0% -20%, rgba(14, 165, 233, 0.18), transparent 50%),
-        radial-gradient(900px 420px at 100% 0%, rgba(99, 102, 241, 0.16), transparent 52%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(900px 520px at 12% 15%, rgba(34,211,238,.22), transparent 60%),
+        radial-gradient(900px 520px at 85% 22%, rgba(167,139,250,.20), transparent 60%),
+        radial-gradient(900px 520px at 55% 92%, rgba(52,211,153,.14), transparent 60%),
+        radial-gradient(700px 420px at 35% 65%, rgba(251,113,133,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 55%, var(--bg0));
+      overflow:hidden;
     }
 
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    /* Layout */
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+    }
 
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    /* Topbar */
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background: linear-gradient(180deg, rgba(5,8,22,.82), rgba(5,8,22,.55));
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .topbar-inner{
+      max-width: 1240px;
+      margin:0 auto;
+      padding: 14px 16px;
+      display:flex;
+      gap:14px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width: 260px;
+    }
+    .logo{
+      width:42px; height:42px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(circle at 30% 25%, rgba(34,211,238,.92), rgba(34,211,238,0) 58%),
+        radial-gradient(circle at 75% 70%, rgba(167,139,250,.92), rgba(167,139,250,0) 55%),
+        linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.02));
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo::after{
+      content:"";
+      position:absolute;
+      inset:-70%;
+      background: conic-gradient(from 220deg, transparent, rgba(255,255,255,.18), transparent);
+      animation: spin 9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .brand h1{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.25px;
+      line-height:1.1;
+    }
+    .brand small{
+      display:block;
+      margin-top:3px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    /* Search bar */
+    .searchbar{
+      flex:1;
+      min-width: 320px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .inputWrap{
+      flex:1;
+      position:relative;
+    }
+    .searchInput{
+      width:100%;
+      padding: 12px 44px 12px 44px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
       color: var(--text);
-      background: var(--gradient);
-      overflow: hidden;
-      transition: background 0.25s ease;
+      outline:none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+      transition: transform .16s ease, border .16s ease, box-shadow .16s ease;
+    }
+    .searchInput:focus{
+      transform: translateY(-1px);
+      border-color: rgba(34,211,238,.55);
+      box-shadow: 0 0 0 6px rgba(34,211,238,.12);
+    }
+    .searchIcon{
+      position:absolute; left:14px; top:50%;
+      transform: translateY(-50%);
+      width:18px; height:18px;
+      opacity:.9;
+      pointer-events:none;
+    }
+    .kbd{
+      position:absolute;
+      right:10px; top:50%;
+      transform: translateY(-50%);
+      font-family:var(--mono);
+      font-size:11px;
+      color: rgba(167,178,204,.95);
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      padding:3px 7px;
+      border-radius: 10px;
+      user-select:none;
     }
 
-    .app {
-      display: grid;
-      grid-template-columns: var(--sidebar-width, 430px) 1fr;
-      height: 100vh;
-      transition: grid-template-columns 0.22s ease;
-    }
-
-    .app.sidebar-collapsed { --sidebar-width: 74px; }
-
-    .sidebar {
-      border-right: 1px solid var(--line);
-      background: var(--panel);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      overflow: auto;
-      padding: 12px;
-      position: relative;
-    }
-
-    .brand-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .brand {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      min-width: 0;
-    }
-
-    .logo {
-      width: 34px;
-      height: 34px;
-      border-radius: 11px;
-      background: linear-gradient(145deg, var(--accent), var(--primary));
-      box-shadow: 0 6px 16px rgba(34, 211, 238, 0.35);
-      display: grid;
-      place-items: center;
-      color: #05111b;
-      font-weight: 900;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.02rem;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.82rem;
-      margin-top: 2px;
-      line-height: 1.28;
-    }
-
-    .icon-btn {
-      cursor: pointer;
-      border: 1px solid var(--line-strong);
-      background: rgba(15, 23, 42, 0.45);
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
       color: var(--text);
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      font-size: 0.95rem;
-      transition: filter 0.15s ease, background 0.2s ease;
-      flex-shrink: 0;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .14s ease, border .14s ease, background .14s ease, box-shadow .14s ease;
+      white-space:nowrap;
     }
-
-    body.theme-light .icon-btn { background: rgba(255,255,255,0.85); }
-    .icon-btn:hover { filter: brightness(1.08); }
-
-    .panel {
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.74), rgba(10, 16, 28, 0.72));
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 10px;
-      box-shadow: var(--shadow-soft);
+    .btn:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      box-shadow: 0 16px 40px rgba(0,0,0,.32);
     }
-
-    body.theme-light .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.86));
+    .btn:active{ transform: translateY(0px); }
+    .btn.primary{
+      border-color: rgba(34,211,238,.30);
+      background: linear-gradient(135deg, rgba(34,211,238,.24), rgba(167,139,250,.18));
+      box-shadow: 0 18px 55px rgba(0,0,0,.25);
     }
-
-    .panel-title {
-      font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      margin-bottom: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+    .btn.primary:hover{
+      border-color: rgba(34,211,238,.6);
+      background: linear-gradient(135deg, rgba(34,211,238,.32), rgba(167,139,250,.24));
     }
-
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
+    .btn.danger{
+      border-color: rgba(239,68,68,.28);
+      background: rgba(239,68,68,.08);
     }
-    .row:last-child { margin-bottom: 0; }
-
-    label {
-      font-size: 0.78rem;
-      letter-spacing: 0.2px;
-      color: color-mix(in srgb, var(--text) 82%, var(--muted) 18%);
-    }
-
-    .control {
-      background: rgba(9, 14, 26, 0.92);
-      color: var(--text);
-      border: 1px solid var(--line-strong);
-      border-radius: 10px;
-      padding: 8px 9px;
-      font-size: 0.86rem;
-      outline: none;
-      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
-    }
-
-    body.theme-light .control { background: rgba(255,255,255,0.95); }
-
-    .control:focus {
-      border-color: color-mix(in srgb, var(--accent) 78%, white 22%);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent 76%);
-    }
-
-    input[type="number"].control { width: 92px; }
-    select.control { min-width: 126px; }
-    input[type="text"].control { flex: 1; min-width: 220px; }
-
-    .btn {
-      cursor: pointer;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      padding: 9px 11px;
-      font-weight: 800;
-      font-size: 0.79rem;
-      transition: transform .08s ease, filter .16s ease, border-color .16s ease, background .16s ease;
-      white-space: nowrap;
-    }
-    .btn:hover { filter: brightness(1.08); }
-    .btn:active { transform: translateY(1px); }
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #10b981, #14b8a6);
-      color: #062018;
-      border-color: rgba(20, 184, 166, 0.45);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #334155, #3f4f68);
-      border-color: rgba(148, 163, 184, 0.34);
-      color: #e5edf9;
-    }
-
-    body.theme-light .btn-secondary {
-      background: linear-gradient(135deg, #dbeafe, #c7d2fe);
-      color: #1e293b;
-      border-color: rgba(71, 85, 105, 0.28);
-    }
-
-    .btn-ghost {
-      background: rgba(30, 41, 59, 0.85);
-      border-color: rgba(100, 116, 139, 0.35);
-      color: #d3ddeb;
-    }
-
-    body.theme-light .btn-ghost {
-      background: rgba(241,245,249,0.95);
-      color: #1e293b;
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, #7f1d1d, #b91c1c);
-      border-color: rgba(239, 68, 68, 0.35);
-      color: #fee2e2;
-    }
-
-    .toggle-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .toggle {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      font-size: 0.79rem;
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 7px 9px;
-    }
-    body.theme-light .toggle { background: rgba(248, 250, 252, 0.95); }
-
-    .chips {
-      display: flex;
-      gap: 7px;
-      flex-wrap: wrap;
-      margin-top: 2px;
-    }
-
-    .chip {
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      background: var(--chip);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.77rem;
-      cursor: pointer;
-      user-select: none;
-      transition: all .15s ease;
-      color: color-mix(in srgb, var(--text) 88%, #c5d5ff 12%);
-    }
-
-    .chip:hover { border-color: rgba(148, 163, 184, 0.56); }
-    .chip.active {
-      background: linear-gradient(135deg, #1d4ed8, #4f46e5);
-      border-color: rgba(99, 102, 241, 0.95);
-      color: #eff6ff;
-    }
-
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
-      gap: 8px;
-      margin-top: 5px;
-    }
-
-    .kpi {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px 9px;
-      background: rgba(9, 14, 26, 0.7);
-    }
-    body.theme-light .kpi { background: rgba(255,255,255,0.95); }
-
-    .kpi .v { font-size: 0.96rem; font-weight: 900; line-height: 1.1; }
-    .kpi .l { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-
-    .status {
-      border: 1px solid var(--line);
-      background: rgba(8, 13, 24, 0.7);
-      border-radius: 12px;
+    .btn.small{
       padding: 9px 10px;
-      font-size: 0.81rem;
-      color: var(--muted);
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      margin-top: 8px;
-    }
-    body.theme-light .status { background: rgba(255,255,255,0.95); }
-
-    .list-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 6px 2px;
-      font-size: 0.82rem;
-      gap: 8px;
-    }
-
-    .tiny { font-size: 0.75rem; color: var(--muted); }
-
-    .results {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
-      max-height: 37vh;
-      overflow: auto;
-      padding-right: 2px;
-    }
-
-    .results.favs { max-height: 22vh; }
-
-    .card {
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(11, 18, 32, 0.76));
-      border: 1px solid var(--line);
       border-radius: 14px;
-      padding: 10px;
-      box-shadow: var(--shadow-soft);
-      transition: border-color .14s ease, transform .08s ease;
+      font-size: 12px;
     }
-    body.theme-light .card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.94));
+    .icon{
+      width:18px; height:18px;
+      opacity:.95;
     }
-    .card:hover { border-color: rgba(148, 163, 184, 0.52); }
 
-    .title-row { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
-    .title { font-size: 0.92rem; font-weight: 900; line-height: 1.24; }
-
-    .confidence {
-      font-size: 0.7rem;
-      border-radius: 999px;
-      padding: 3px 8px;
-      border: 1px solid transparent;
-      white-space: nowrap;
+    /* Suggest dropdown */
+    .suggest{
+      position:absolute;
+      left:0; right:0;
+      top: calc(100% + 8px);
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(5,8,22,.92);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+      display:none;
+      z-index:100;
     }
-    .conf-high { background: rgba(34, 197, 94, 0.13); border-color: rgba(34, 197, 94, 0.4); color: #bbf7d0; }
-    .conf-mid  { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); color: #fde68a; }
-    .conf-low  { background: rgba(239, 68, 68, 0.11); border-color: rgba(239, 68, 68, 0.35); color: #fecaca; }
-
-    .meta { font-size: 0.77rem; color: var(--muted); line-height: 1.35; margin: 4px 0 6px; }
-
-    .pill {
-      display: inline-block;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      border-radius: 999px;
-      padding: 2px 7px;
-      font-size: 0.7rem;
-      margin-right: 5px;
-      margin-bottom: 5px;
-      text-decoration: none;
-      background: rgba(15, 23, 42, 0.55);
-      color: color-mix(in srgb, var(--text) 82%, #a8b9ce 18%);
+    .suggestHeader{
+      padding:10px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      color: rgba(167,178,204,.95);
+      font-size:12px;
     }
-    body.theme-light .pill { background: rgba(248,250,252,0.95); }
-
-    .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-
-    .pill-btn {
-      cursor: pointer;
-      border: 1px solid rgba(148, 163, 184, 0.34);
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 0.72rem;
-      background: rgba(15, 23, 42, 0.58);
-      color: color-mix(in srgb, var(--text) 86%, #b3c5e2 14%);
+    .suggestRow{
+      padding:10px 12px;
+      display:flex;
+      gap:10px;
+      cursor:pointer;
+      border-top: 1px solid rgba(255,255,255,.06);
+      transition: background .12s ease;
     }
-    body.theme-light .pill-btn { background: rgba(248,250,252,0.95); }
-    .pill-btn.ok { border-color: rgba(34, 197, 94, 0.5); color: #bbf7d0; }
-    .pill-btn.bad { border-color: rgba(239, 68, 68, 0.5); color: #fecaca; }
-
-    .footer-note {
-      margin-top: 12px;
-      padding: 9px 8px;
-      border: 1px solid var(--line);
-      background: rgba(8, 13, 24, 0.6);
+    .suggestRow:hover{ background: rgba(255,255,255,.06); }
+    .suggestRow.active{ background: rgba(34,211,238,.10); }
+    .pin{
+      width:30px; height:30px;
       border-radius: 12px;
-      text-align: center;
+      border:1px solid rgba(34,211,238,.24);
+      background: rgba(34,211,238,.10);
+      display:flex; align-items:center; justify-content:center;
+      flex:0 0 auto;
+    }
+    .sTitle{ font-size:13px; line-height:1.2; }
+    .sSub{ font-size:12px; color:var(--muted); margin-top:2px; line-height:1.2; }
+
+    /* Main */
+    .main{
+      max-width:1240px;
+      margin:0 auto;
+      padding: 14px 16px;
+      height:100%;
+      display:grid;
+      grid-template-columns: 440px 1fr;
+      gap:14px;
+      min-height:0;
+      overflow:hidden;
+    }
+    .panel{
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      min-height:0;
+    }
+
+    /* Sidebar */
+    .sidebar{ display:flex; flex-direction:column; min-height:0; }
+    .sidebarHeader{
+      padding:14px 14px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(500px 220px at 10% 0%, rgba(34,211,238,.16), transparent 60%),
+        radial-gradient(500px 220px at 90% 0%, rgba(167,139,250,.14), transparent 60%),
+        rgba(255,255,255,.02);
+    }
+    .nearLine{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .nearLabelSmall{ font-size:12px; color:var(--muted); }
+    .nearLabel{
+      margin-top:4px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      font-size: 14px;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    .stat{
+      padding:10px 12px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.16);
+    }
+    .stat .k{ font-size:11px; color:var(--muted); }
+    .stat .v{ margin-top:4px; font-size:16px; font-weight: 850; }
+
+    .filters{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .box{
+      padding:10px 12px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    label{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:13px;
+      appearance:none;
+      cursor:pointer;
+    }
+    input[type="range"]{ width:100%; }
+    .meta{
+      margin-top:6px;
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:var(--muted);
+      font-family:var(--mono);
+    }
+
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, border .12s ease, background .12s ease;
+    }
+    .chip:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.05); }
+    .chip.on{
+      border-color: rgba(34,211,238,.45);
+      background: rgba(34,211,238,.10);
+      box-shadow: 0 12px 28px rgba(0,0,0,.22);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: rgba(167,178,204,.75);
+      box-shadow: 0 0 0 3px rgba(167,178,204,.12);
+    }
+    .chip.on .dot{ background: var(--c1); box-shadow: 0 0 0 3px rgba(34,211,238,.18); }
+
+    .list{
+      padding: 12px 12px 14px;
+      overflow:auto;
+      min-height:0;
+    }
+
+    .card{
+      padding:12px;
+      border-radius: 20px;
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      box-shadow: 0 12px 30px rgba(0,0,0,.28);
+      margin-bottom:12px;
+      transition: border .12s ease, transform .12s ease;
+    }
+    .card:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+    .card.highlight{
+      border-color: rgba(34,211,238,.45);
+      background: linear-gradient(180deg, rgba(34,211,238,.12), rgba(255,255,255,.03));
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+    }
+    .cardTop{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .badge{
+      padding:7px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      font-size:12px;
+      font-family: var(--mono);
+      white-space:nowrap;
+    }
+    .badge.good{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
+    .badge.warn{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); }
+    .badge.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); }
+
+    .title{
+      margin:0;
+      font-size:14px;
+      font-weight: 850;
+      letter-spacing:.2px;
+      line-height:1.2;
+    }
+    .sub{
+      margin-top:4px;
+      font-size:12px;
       color: var(--muted);
-      font-size: 0.76rem;
-      letter-spacing: 0.2px;
+      line-height:1.25;
     }
-    body.theme-light .footer-note { background: rgba(255,255,255,0.95); }
-
-    .map-wrap { position: relative; height: 100vh; min-width: 0; }
-    #map { height: 100%; width: 100%; }
-
-    .overlay {
-      position: absolute;
-      z-index: 1000;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid var(--line);
-      background: rgba(9, 14, 26, 0.78);
-      border-radius: 12px;
-      color: color-mix(in srgb, var(--text) 84%, #b9cbe2 16%);
+    .metaPills{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
     }
-    body.theme-light .overlay {
-      background: rgba(255,255,255,0.9);
-      color: #334155;
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      font-size:12px;
     }
-
-    .top-right {
-      top: 12px;
-      right: 12px;
-      max-width: 470px;
-      padding: 8px 10px;
-      font-size: 0.77rem;
-      line-height: 1.35;
+    .pill b{ font-family: var(--mono); font-weight: 850; }
+    .muted{ color: var(--muted); }
+    .actions{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
     }
 
-    .bottom-right {
-      bottom: 12px;
-      right: 12px;
-      padding: 9px 10px;
-      font-size: 0.76rem;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      max-width: 520px;
+    /* Map */
+    .mapWrap{ position:relative; min-height:0; }
+    #map{ width:100%; height:100%; border-radius: var(--radius); }
+    .mapHUD{
+      position:absolute;
+      top:12px; left:12px;
+      z-index: 500;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      pointer-events:none;
+    }
+    .hudChip{
+      pointer-events:none;
+      padding:9px 10px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(5,8,22,.60);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.28);
+      font-size:12px;
+      color: rgba(234,240,255,.95);
+    }
+    .hudChip b{ font-family: var(--mono); }
+
+    .mapBtns{
+      position:absolute;
+      top:12px; right:12px;
+      z-index:500;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .mapBtns .btn{ pointer-events:auto; }
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      bottom:18px; left:50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      max-width: min(920px, calc(100% - 24px));
+      display:none;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(5,8,22,.72);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow2);
+      font-size: 13px;
+      color: rgba(234,240,255,.95);
+    }
+    .toast strong{ color: white; }
+    .toast .hint{ color: var(--muted); margin-top:4px; font-size:12px; }
+
+    /* Loading spinner */
+    .spin{
+      width:16px; height:16px;
+      border-radius:50%;
+      border:2px solid rgba(255,255,255,.25);
+      border-top-color: rgba(34,211,238,.9);
+      animation: spin2 .8s linear infinite;
+    }
+    @keyframes spin2{ to{ transform: rotate(360deg); } }
+
+    /* Footer */
+    footer{
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(5,8,22,.55);
+      backdrop-filter: blur(12px);
+    }
+    .footerInner{
+      max-width:1240px;
+      margin:0 auto;
+      padding: 10px 16px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size:12px;
+      color: rgba(167,178,204,.95);
     }
 
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
-      margin-right: 5px;
-      transform: translateY(1px);
+    /* Modal */
+    .modalBackdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 3000;
+      padding: 18px;
     }
-    .dot-high { background: #22c55e; }
-    .dot-mid { background: #f59e0b; }
-    .dot-low { background: #ef4444; }
-
-    .map-style { min-width: 150px; }
-
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
-      background: #0b1220;
-      color: #dbe7fb;
-      border: 1px solid rgba(148, 163, 184, 0.28);
+    .modal{
+      width: min(760px, 100%);
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      box-shadow: 0 30px 110px rgba(0,0,0,.65);
+      overflow:hidden;
     }
-    body.theme-light .leaflet-popup-content-wrapper,
-    body.theme-light .leaflet-popup-tip {
-      background: #ffffff;
-      color: #0f172a;
-      border-color: rgba(71, 85, 105, 0.25);
+    .modalHeader{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:
+        radial-gradient(600px 220px at 10% 0%, rgba(34,211,238,.18), transparent 55%),
+        radial-gradient(600px 220px at 90% 0%, rgba(167,139,250,.16), transparent 55%),
+        rgba(0,0,0,.10);
+    }
+    .modalHeader h3{ margin:0; font-size:14px; font-weight: 900; letter-spacing:.2px; }
+    .modalBody{ padding: 14px 16px; }
+    .modalActions{
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .formGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .field{
+      padding: 10px 12px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+    }
+    .field input, .field textarea{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:13px;
+    }
+    .field textarea{ min-height: 90px; resize: vertical; }
+    .note{
+      margin-top: 10px;
+      color: rgba(167,178,204,.95);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .note code{
+      font-family: var(--mono);
+      font-size:11px;
+      padding:2px 6px;
+      border-radius: 10px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
     }
 
-    .app.sidebar-collapsed { grid-template-columns: 74px 1fr; }
-    .app.sidebar-collapsed .panel,
-    .app.sidebar-collapsed .footer-note,
-    .app.sidebar-collapsed .hide-on-collapse { display: none; }
-    .app.sidebar-collapsed .brand-wrap { justify-content: center; }
-    .app.sidebar-collapsed .brand { gap: 0; }
-    .app.sidebar-collapsed .sidebar { padding: 10px 8px; overflow-x: hidden; }
-
-    @media (max-width: 980px) {
-      body { overflow: auto; }
-      .app {
+    /* Responsive */
+    @media (max-width: 980px){
+      body{ overflow:auto; }
+      .app{ overflow:auto; height:auto; min-height:100%; }
+      .main{
         grid-template-columns: 1fr;
-        grid-template-rows: 56vh auto;
-        height: auto;
-        min-height: 100vh;
+        grid-template-rows: auto 520px;
+        height:auto;
+        overflow: visible;
       }
-      .sidebar {
-        border-right: none;
-        border-bottom: 1px solid var(--line);
-      }
-      .map-wrap { height: 44vh; }
-      .results { max-height: 40vh; }
-      .results.favs { max-height: 25vh; }
-
-      .app.sidebar-collapsed { grid-template-columns: 1fr; }
-      .app.sidebar-collapsed .panel,
-      .app.sidebar-collapsed .footer-note,
-      .app.sidebar-collapsed .hide-on-collapse { display: block; }
+      .searchbar{ min-width: 100%; }
+      .brand{ min-width: unset; }
+      #map{ height:520px; }
+    }
+    @media (max-width: 520px){
+      .btn span.txt{ display:none; }
+      .kbd{ display:none; }
+      .formGrid{ grid-template-columns: 1fr; }
     }
 
-    /* ===== Autocomplete dropdown ===== */
-    .autocomplete-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 220px;
+    /* Leaflet controls */
+    .leaflet-control-zoom{ border-radius: 14px; overflow:hidden; }
+    .leaflet-control-attribution{
+      background: rgba(0,0,0,.22) !important;
+      color: rgba(234,240,255,.75) !important;
+      border-radius: 10px;
+      margin: 0 8px 8px 0 !important;
     }
-
-    .suggestions {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
-      z-index: 1200;
-      border: 1px solid var(--line-strong);
-      border-radius: 12px;
-      background: rgba(9, 14, 26, 0.98);
-      box-shadow: var(--shadow-soft);
-      max-height: 260px;
-      overflow: auto;
-      display: none;
-    }
-
-    body.theme-light .suggestions {
-      background: rgba(255,255,255,0.98);
-    }
-
-    .suggestion-item {
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--line);
-      cursor: pointer;
-      font-size: 0.83rem;
-      line-height: 1.3;
-      color: var(--text);
-    }
-
-    .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:hover,
-    .suggestion-item.active {
-      background: color-mix(in srgb, var(--primary) 18%, transparent 82%);
-    }
-
-    .suggestion-main {
-      font-weight: 700;
-      font-size: 0.83rem;
-      margin-bottom: 2px;
-    }
-
-    .suggestion-sub {
-      color: var(--muted);
-      font-size: 0.75rem;
-    }
+    .leaflet-control-attribution a{ color: rgba(34,211,238,.92) !important; }
   </style>
 </head>
 
 <body>
-  <div id="app" class="app">
-    <aside class="sidebar">
-      <div class="brand-wrap">
+  <div class="app">
+    <div class="topbar">
+      <div class="topbar-inner">
         <div class="brand">
-          <div class="logo" title="Public Charging Outlet Finder">⚡</div>
-          <div class="hide-on-collapse">
-            <h1>Public Charging Outlet Finder</h1>
-            <div class="subtitle">Find likely charging outlets around you</div>
-          </div>
-        </div>
-        <div class="row" style="margin:0; gap:6px;">
-          <button id="themeBtn" class="icon-btn" title="Toggle light/dark theme">🌓</button>
-          <button id="collapseBtn" class="icon-btn" title="Collapse sidebar">☰</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">
-          <span>Search</span>
-          <span class="tiny">Settings auto-save</span>
-        </div>
-
-        <div class="row">
-          <label for="radiusKm">Radius (km)</label>
-          <input id="radiusKm" class="control" type="number" min="1" max="30" step="1" value="5"/>
-
-          <label for="sortBy">Sort</label>
-          <select id="sortBy" class="control">
-            <option value="best">Best Match</option>
-            <option value="nearest">Nearest</option>
-            <option value="community">Community Score</option>
-            <option value="confidence">Confidence</option>
-          </select>
-        </div>
-
-        <div class="row">
-          <label for="addressInput">Address</label>
-          <div class="autocomplete-wrap">
-            <input id="addressInput" class="control" type="text" placeholder="e.g., 200 King St W, Toronto" autocomplete="off" />
-            <div id="suggestions" class="suggestions" role="listbox" aria-label="Address suggestions"></div>
-          </div>
-          <button id="useAddressBtn" class="btn btn-secondary">Use Address</button>
-        </div>
-
-        <div class="row">
-          <button id="locateBtn" class="btn btn-primary">Use My Location</button>
-          <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
-          <button id="offlineBtn" class="btn btn-ghost">Load Cache</button>
-        </div>
-
-        <div class="toggle-grid">
-          <label class="toggle"><input id="open247Only" type="checkbox" /> 24/7 only</label>
-          <label class="toggle"><input id="showHeat" type="checkbox" checked /> Heat bubbles</label>
-          <label class="toggle"><input id="wifiOnly" type="checkbox" /> Wi-Fi likely</label>
-          <label class="toggle"><input id="highConfidenceOnly" type="checkbox" /> High confidence</label>
-        </div>
-
-        <div class="kpis">
-          <div class="kpi">
-            <div id="kpiTotal" class="v">0</div>
-            <div class="l">Matches</div>
-          </div>
-          <div class="kpi">
-            <div id="kpiHigh" class="v">0</div>
-            <div class="l">High confidence</div>
-          </div>
-          <div class="kpi">
-            <div id="kpiAvgDist" class="v">0.00 km</div>
-            <div class="l">Avg distance</div>
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1>Clinic Wait Time Finder</h1>
+            <small>Fast, colourful, and actually usable. Compare wait, distance, hours, and services.</small>
           </div>
         </div>
 
-        <div id="status" class="status">Use location or enter an address to begin.</div>
-      </div>
+        <div class="searchbar">
+          <div class="inputWrap">
+            <svg class="searchIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
 
-      <div class="panel">
-        <div class="panel-title">
-          <span>Categories</span>
-          <div class="row" style="margin:0; gap:6px;">
-            <button id="selectAllCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">All</button>
-            <button id="clearCatsBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">None</button>
+            <input id="addressInput" class="searchInput" autocomplete="off"
+              placeholder="Search an address or city (e.g., 482 Front St W, Toronto)"/>
+
+            <div class="kbd">Ctrl/⌘ K</div>
+
+            <div id="suggestBox" class="suggest" role="listbox" aria-label="Address suggestions"></div>
+          </div>
+
+          <button class="btn primary" id="btnUseLocation" title="Use my location">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 22s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M12 12.8a2.1 2.1 0 1 0 0-4.2 2.1 2.1 0 0 0 0 4.2Z" stroke="currentColor" stroke-width="1.9"/>
+            </svg>
+            <span class="txt">Use Location</span>
+          </button>
+
+          <button class="btn" id="btnAddClinic" title="Add a clinic">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="txt">Add Clinic</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- Sidebar -->
+      <div class="panel sidebar">
+        <div class="sidebarHeader">
+          <div class="nearLine">
+            <div>
+              <div class="nearLabelSmall">Showing results near</div>
+              <div id="nearLabel" class="nearLabel">Toronto, ON</div>
+            </div>
+            <button class="btn small" id="btnReset" title="Reset filters">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                <path d="M20 4v6h-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              </svg>
+              <span class="txt">Reset</span>
+            </button>
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="k">Clinics found</div>
+              <div class="v" id="statCount">—</div>
+            </div>
+            <div class="stat">
+              <div class="k">Best match</div>
+              <div class="v" id="statBest">—</div>
+            </div>
           </div>
         </div>
-        <div id="chips" class="chips"></div>
-      </div>
 
-      <div class="panel">
-        <div class="panel-title">
-          <span>Favorites</span>
-          <div class="row" style="margin:0; gap:6px;">
-            <button id="exportFavBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">Export</button>
-            <button id="importFavBtn" class="btn btn-ghost" style="padding:6px 8px; font-size:0.72rem;">Import</button>
-            <button id="clearFavBtn" class="btn btn-danger" style="padding:6px 8px; font-size:0.72rem;">Clear</button>
-            <input id="importFavFile" type="file" accept="application/json" style="display:none;" />
+        <div class="filters">
+          <div class="grid">
+            <div class="box">
+              <label for="sortBy">Sort by</label>
+              <select id="sortBy">
+                <option value="best">Best overall</option>
+                <option value="distance">Closest</option>
+                <option value="wait">Shortest wait</option>
+                <option value="rating">Highest rating</option>
+                <option value="updated">Recently updated</option>
+              </select>
+            </div>
+
+            <div class="box">
+              <label for="openNow">Hours</label>
+              <select id="openNow">
+                <option value="any">Any</option>
+                <option value="open">Open now</option>
+                <option value="closing">Closing soon (≤ 60 min)</option>
+              </select>
+            </div>
+
+            <div class="box">
+              <label for="maxDistance">Max distance (km)</label>
+              <input id="maxDistance" type="range" min="1" max="25" value="12"/>
+              <div class="meta">
+                <span>1</span>
+                <span id="maxDistanceLabel">12 km</span>
+                <span>25</span>
+              </div>
+            </div>
+
+            <div class="box">
+              <label for="maxWait">Max wait (minutes)</label>
+              <input id="maxWait" type="range" min="0" max="240" value="120"/>
+              <div class="meta">
+                <span>0</span>
+                <span id="maxWaitLabel">120 min</span>
+                <span>240</span>
+              </div>
+            </div>
+
+            <div class="box" style="grid-column:1 / -1;">
+              <label>Services</label>
+              <div class="chips" id="serviceChips"></div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn small" id="btnReportMode" title="Toggle community reports">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 19V5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.9"/>
+                <path d="M8 13h8M8 9h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              </svg>
+              <span class="txt">Community:</span> <span id="reportModeLabel" style="font-family:var(--mono); font-weight:900;">ON</span>
+            </button>
+
+            <button class="btn small danger" id="btnClearLocal" title="Clear locally saved clinics/reports">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 3h6m-8 4h10m-9 0 1 14h6l1-14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              </svg>
+              <span class="txt">Clear Data</span>
+            </button>
           </div>
         </div>
-        <div id="favList" class="results favs"></div>
+
+        <div class="list" id="clinicList"></div>
       </div>
 
-      <div class="panel">
-        <div class="list-head">
-          <span>Results</span>
-          <span class="tiny" id="count">0 match(es)</span>
+      <!-- Map -->
+      <div class="panel mapWrap">
+        <div class="mapHUD">
+          <div class="hudChip">Tip: click a clinic card to highlight it on the map.</div>
+          <div class="hudChip">Wait times are <b>estimates</b> (improve with reports).</div>
         </div>
-        <div id="results" class="results"></div>
+
+        <div class="mapBtns">
+          <button class="btn small" id="btnFit" title="Fit map to results">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+            <span class="txt">Fit</span>
+          </button>
+          <button class="btn small" id="btnCenter" title="Center on search location">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.9"/>
+            </svg>
+            <span class="txt">Center</span>
+          </button>
+        </div>
+
+        <div id="map"></div>
       </div>
+    </div>
 
-      <div class="footer-note">© 2026 Athir Global Partners</div>
-    </aside>
-
-    <main class="map-wrap">
-      <div class="overlay top-right">
-        Data: OpenStreetMap via Overpass + Nominatim. Votes/favorites/settings are saved locally on your device.
+    <footer>
+      <div class="footerInner">
+        <div>© 2026 Athir Global Partners</div>
+        <div class="muted">Geocoding: OpenStreetMap Nominatim (rate-limited). If search fails, try a more specific address.</div>
       </div>
-
-      <div class="overlay bottom-right">
-        <span><span class="legend-dot dot-high"></span>High confidence</span>
-        <span><span class="legend-dot dot-mid"></span>Likely</span>
-        <span><span class="legend-dot dot-low"></span>Possible</span>
-
-        <select id="mapStyleSelect" class="control map-style" title="Map style">
-          <option value="osm">OSM Standard</option>
-          <option value="cartoLight">Carto Light</option>
-          <option value="cartoDark">Carto Dark</option>
-          <option value="esri">Esri Streets</option>
-        </select>
-      </div>
-
-      <div id="map"></div>
-    </main>
+    </footer>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
-  <script>
-    const CATS = [
-      { k: "cafe",    l: "Cafés",            m: t => ["cafe","restaurant","fast_food","food_court"].includes(t.amenity) },
-      { k: "library", l: "Libraries",        m: t => t.amenity === "library" },
-      { k: "campus",  l: "Campus",           m: t => ["college","university","school"].includes(t.amenity) },
-      { k: "cowork",  l: "Coworking",        m: t => ["coworking","co-working"].includes(t.office) },
-      { k: "transit", l: "Transit",          m: t => !!t.public_transport || t.railway === "station" || t.amenity === "bus_station" },
-      { k: "mall",    l: "Malls",            m: t => t.shop === "mall" || t.building === "retail" },
-      { k: "hotel",   l: "Hotels",           m: t => ["hotel","hostel"].includes(t.tourism) },
-      { k: "explicit",l: "Explicit outlets", m: t => "socket" in t || "socket:usb" in t || "charging" in t || "power_supply" in t || "outlet" in t }
-    ];
+  <!-- Modal -->
+  <div class="modalBackdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="modalTitle">Modal</h3>
+        <button class="btn small" id="btnCloseModal">Close</button>
+      </div>
+      <div class="modalBody" id="modalBody"></div>
+      <div class="modalActions" id="modalActions"></div>
+    </div>
+  </div>
 
-    const LS = {
-      fav: "csp_ultimate_favs",
-      votes: "csp_ultimate_votes",
-      cache: "csp_ultimate_cache",
-      settings: "csp_ultimate_settings"
-    };
+<script>
+/**
+ * Clinic Wait Time Finder — Improved, working single-file website
+ * Key fixes:
+ * - Search reliability: proper debounce + abort previous requests + no forbidden headers
+ * - Clear user feedback: toast + loading indicator inside suggestions
+ * - Keyboard nav in suggestions: ↑ ↓ Enter Esc
+ * - Better fit-to-results (uses actual marker bounds)
+ * - More robust UI states and mobile map sizing
+ */
 
-    const MAP_STYLES = {
-      osm: {
-        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        options: { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }
-      },
-      cartoLight: {
-        url: "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20 }
-      },
-      cartoDark: {
-        url: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        options: { attribution: "&copy; OpenStreetMap contributors &copy; CARTO", maxZoom: 20 }
-      },
-      esri: {
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
-        options: { attribution: "Tiles &copy; Esri", maxZoom: 19 }
+const $ = (s) => document.querySelector(s);
+const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+const fmtKm = (km)=> km < 1 ? `${Math.round(km*1000)} m` : `${km.toFixed(km<10?1:0)} km`;
+const fmtMin = (m)=> `${Math.round(m)} min`;
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[s]));
+}
+function escapeAttr(str){ return escapeHtml(str).replace(/"/g,"&quot;"); }
+
+// ---------- Toast ----------
+let toastTimer = null;
+function toast(msg, hint=""){
+  const t = $("#toast");
+  t.innerHTML = `<div><strong>${escapeHtml(msg)}</strong></div>` + (hint ? `<div class="hint">${escapeHtml(hint)}</div>` : "");
+  t.style.display = "block";
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display="none"; }, 3800);
+}
+
+// ---------- Local storage ----------
+const LS = {
+  clinics: "cw_clinics_local_v2",
+  reports: "cw_reports_v2",
+  settings: "cw_settings_v2"
+};
+function loadJSON(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch{ return fallback; }
+}
+function saveJSON(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+// ---------- Sample data (demo) ----------
+const SAMPLE_CLINICS = [
+  { id:"s1", name:"Front & Spadina Walk-In Clinic", address:"Front St W & Spadina Ave, Toronto, ON", lat:43.64262, lng:-79.38705, phone:"(416) 555-0123", services:["Walk-in","Family Doctor","Vaccines","Bloodwork"], rating:4.4, baseWaitMin:38, lastUpdated: new Date(Date.now()-45*60000).toISOString(),
+    hours:{ mon:["09:00","19:00"], tue:["09:00","19:00"], wed:["09:00","19:00"], thu:["09:00","19:00"], fri:["09:00","18:00"], sat:["10:00","16:00"], sun:null } },
+  { id:"s2", name:"Queen West Medical Walk-In", address:"Queen St W, Toronto, ON", lat:43.64842, lng:-79.40415, phone:"(416) 555-0199", services:["Walk-in","Minor Injuries","STD Testing","Prescriptions"], rating:4.1, baseWaitMin:52, lastUpdated: new Date(Date.now()-90*60000).toISOString(),
+    hours:{ mon:["10:00","20:00"], tue:["10:00","20:00"], wed:["10:00","20:00"], thu:["10:00","20:00"], fri:["10:00","19:00"], sat:["10:00","17:00"], sun:["11:00","16:00"] } },
+  { id:"s3", name:"Downtown Urgent Care (Non-ER)", address:"Bay St, Toronto, ON", lat:43.65390, lng:-79.38530, phone:"(416) 555-0777", services:["Urgent Care","Minor Injuries","Stitches","X-ray Nearby"], rating:4.6, baseWaitMin:28, lastUpdated: new Date(Date.now()-20*60000).toISOString(),
+    hours:{ mon:["08:00","22:00"], tue:["08:00","22:00"], wed:["08:00","22:00"], thu:["08:00","22:00"], fri:["08:00","22:00"], sat:["09:00","20:00"], sun:["09:00","20:00"] } },
+  { id:"s4", name:"Harbourfront Family Health Clinic", address:"Harbour St, Toronto, ON", lat:43.64075, lng:-79.38192, phone:"(416) 555-0444", services:["Family Doctor","Walk-in","Vaccines","Referrals"], rating:4.3, baseWaitMin:44, lastUpdated: new Date(Date.now()-140*60000).toISOString(),
+    hours:{ mon:["09:00","17:00"], tue:["09:00","17:00"], wed:["09:00","17:00"], thu:["09:00","17:00"], fri:["09:00","17:00"], sat:null, sun:null } },
+  { id:"s5", name:"Bloor-Yonge Walk-In & Diagnostics", address:"Bloor St E, Toronto, ON", lat:43.67170, lng:-79.38668, phone:"(416) 555-0333", services:["Walk-in","Bloodwork","Vaccines","Forms"], rating:4.0, baseWaitMin:63, lastUpdated: new Date(Date.now()-55*60000).toISOString(),
+    hours:{ mon:["08:30","18:30"], tue:["08:30","18:30"], wed:["08:30","18:30"], thu:["08:30","18:30"], fri:["08:30","18:00"], sat:["09:00","14:00"], sun:null } }
+];
+
+const ALL_SERVICES = [
+  "Walk-in","Urgent Care","Family Doctor","Minor Injuries","Vaccines","Bloodwork",
+  "STD Testing","Prescriptions","Referrals","Forms","Stitches","X-ray Nearby"
+];
+
+// ---------- State ----------
+let state = {
+  center: { lat:43.6532, lng:-79.3832, label:"Toronto, ON" },
+  userLocation: null,
+  reportMode: true,
+  selectedServices: new Set(),
+  sortBy: "best",
+  openNow: "any",
+  maxDistanceKm: 12,
+  maxWaitMin: 120,
+  highlightedId: null
+};
+
+// Restore settings
+(function(){
+  const s = loadJSON(LS.settings, null);
+  if (s && typeof s === "object"){
+    state = { ...state, ...s, selectedServices: new Set(s.selectedServices || []) };
+  }
+})();
+function persistSettings(){
+  saveJSON(LS.settings, {
+    center: state.center,
+    userLocation: state.userLocation,
+    reportMode: state.reportMode,
+    selectedServices: Array.from(state.selectedServices),
+    sortBy: state.sortBy,
+    openNow: state.openNow,
+    maxDistanceKm: state.maxDistanceKm,
+    maxWaitMin: state.maxWaitMin
+  });
+}
+
+function getAllClinics(){
+  const local = loadJSON(LS.clinics, []);
+  const byId = new Map();
+  for (const c of SAMPLE_CLINICS) byId.set(c.id, c);
+  for (const c of local) byId.set(c.id, c);
+  return Array.from(byId.values());
+}
+function getReports(){ return loadJSON(LS.reports, {}); }
+function addReport(clinicId, minutes){
+  const reports = getReports();
+  if (!reports[clinicId]) reports[clinicId] = [];
+  reports[clinicId].unshift({ minutes: clamp(Number(minutes)||0, 0, 600), ts: new Date().toISOString() });
+  reports[clinicId] = reports[clinicId].slice(0, 40);
+  saveJSON(LS.reports, reports);
+}
+
+function minutesSince(ts){ return (Date.now() - new Date(ts).getTime()) / 60000; }
+function timeAgo(ts){
+  const m = minutesSince(ts);
+  if (m < 1) return "just now";
+  if (m < 60) return `${Math.round(m)}m ago`;
+  const h = m/60;
+  if (h < 24) return `${Math.round(h)}h ago`;
+  return `${Math.round(h/24)}d ago`;
+}
+
+// ---------- Distance (Haversine km) ----------
+function distanceKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLon = (lon2-lon1) * Math.PI/180;
+  const a =
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ---------- Hours / open now ----------
+const DOW = ["sun","mon","tue","wed","thu","fri","sat"];
+function parseHM(hm){ const [h,m] = hm.split(":").map(Number); return h*60 + m; }
+function getOpenInfo(hours){
+  const d = new Date();
+  const key = DOW[d.getDay()];
+  const range = hours?.[key] || null;
+  if (!range) return { status:"closed", closesInMin:null, todayRange:null };
+  const [openHM, closeHM] = range;
+  const openM = parseHM(openHM);
+  const closeM = parseHM(closeHM);
+  const curM = d.getHours()*60 + d.getMinutes();
+
+  if (curM < openM || curM >= closeM) return { status:"closed", closesInMin:null, todayRange:range };
+  const closesIn = closeM - curM;
+  if (closesIn <= 60) return { status:"closingSoon", closesInMin: closesIn, todayRange:range };
+  return { status:"open", closesInMin: closesIn, todayRange:range };
+}
+
+// ---------- Wait estimation ----------
+function estimateWait(clinic){
+  let base = Number(clinic.baseWaitMin || 45);
+
+  const ageM = clinic.lastUpdated ? minutesSince(clinic.lastUpdated) : 180;
+  base += clamp((ageM - 30)/6, 0, 40);
+
+  if (state.reportMode){
+    const reports = (getReports()[clinic.id] || []);
+    if (reports.length){
+      let sum=0, wsum=0;
+      for (const r of reports){
+        const w = clamp(6 - minutesSince(r.ts)/20, 0.6, 6); // fades over ~2 hours
+        sum += r.minutes * w; wsum += w;
       }
-    };
-
-    let curLat = null, curLon = null;
-    let all = [], shown = [];
-    let selected = new Set(CATS.map(c => c.k));
-
-    // Autocomplete state
-    let suggestTimer = null;
-    let activeSuggestIndex = -1;
-    let currentSuggestions = [];
-    let selectedSuggestion = null; // {lat,lon,label}
-
-    const $ = id => document.getElementById(id);
-
-    const esc = s => String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#39;");
-
-    const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-
-    function pj(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
-      catch { return fallback; }
+      const reported = sum/(wsum||1);
+      const blend = clamp(reports.length/8, 0.25, 0.85);
+      base = base*(1-blend) + reported*blend;
     }
+  }
 
-    function sj(key, value) {
-      localStorage.setItem(key, JSON.stringify(value));
+  const h = new Date().getHours() + new Date().getMinutes()/60;
+  const peak = Math.exp(-Math.pow((h-11)/2.6,2))*18 + Math.exp(-Math.pow((h-18)/2.4,2))*12;
+  base += peak;
+
+  return clamp(base, 0, 240);
+}
+function waitBadge(waitMin){
+  if (waitMin <= 25) return { cls:"good", text:`~${fmtMin(waitMin)}` };
+  if (waitMin <= 60) return { cls:"warn", text:`~${fmtMin(waitMin)}` };
+  return { cls:"bad", text:`~${fmtMin(waitMin)}` };
+}
+
+// Score (lower is better)
+function scoreClinic(c){
+  const dist = c._distanceKm ?? 999;
+  const wait = c._waitMin ?? 999;
+  const rating = c.rating || 0;
+  const open = c._open?.status || "closed";
+
+  const openPenalty = open === "open" ? -10 : (open === "closingSoon" ? -5 : 18);
+  const distScore = clamp(dist, 0, 25) * 3.2;
+  const waitScore = clamp(wait, 0, 240) * 1.0;
+  const ratingPenalty = (5 - clamp(rating, 0, 5)) * 6.0;
+  const stale = c.lastUpdated ? clamp((minutesSince(c.lastUpdated)-30)/10, 0, 12) : 12;
+
+  return distScore + waitScore + ratingPenalty + openPenalty + stale;
+}
+
+// ---------- Map ----------
+const map = L.map("map", { zoomControl:true, preferCanvas:true });
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const markersLayer = L.layerGroup().addTo(map);
+let centerMarker = null;
+let highlightCircle = null;
+let currentRendered = [];
+
+function setMapCenter(lat,lng,zoom=13){
+  map.setView([lat,lng], zoom, { animate:true });
+  if (centerMarker) centerMarker.remove();
+  centerMarker = L.circleMarker([lat,lng], {
+    radius:7, weight:2,
+    color:"#22d3ee", fillColor:"#22d3ee", fillOpacity:0.22
+  }).addTo(map);
+}
+
+function highlightOnMap(c){
+  if (highlightCircle) highlightCircle.remove();
+  highlightCircle = L.circle([c.lat,c.lng], {
+    radius: 260,
+    weight: 2,
+    color: "#22d3ee",
+    fillColor: "#22d3ee",
+    fillOpacity: 0.06
+  }).addTo(map);
+}
+
+// Fit bounds using actual clinics
+function fitToResults(){
+  if (!currentRendered.length){
+    setMapCenter(state.center.lat, state.center.lng, 12);
+    return;
+  }
+  const bounds = L.latLngBounds(currentRendered.map(c => [c.lat, c.lng]));
+  map.fitBounds(bounds.pad(0.18), { animate:true });
+}
+
+// ---------- Services chips ----------
+function renderServiceChips(){
+  const host = $("#serviceChips");
+  host.innerHTML = "";
+  for (const s of ALL_SERVICES){
+    const el = document.createElement("div");
+    el.className = "chip" + (state.selectedServices.has(s) ? " on" : "");
+    el.innerHTML = `<span class="dot"></span><span>${escapeHtml(s)}</span>`;
+    el.addEventListener("click", ()=>{
+      if (state.selectedServices.has(s)) state.selectedServices.delete(s);
+      else state.selectedServices.add(s);
+      persistSettings();
+      renderServiceChips();
+      refresh();
+    });
+    host.appendChild(el);
+  }
+}
+
+// ---------- Compute / filter / sort ----------
+function buildComputed(){
+  const clinics = getAllClinics();
+  for (const c of clinics){
+    c._distanceKm = distanceKm(state.center.lat, state.center.lng, c.lat, c.lng);
+    c._open = getOpenInfo(c.hours || {});
+    c._waitMin = estimateWait(c);
+    c._updatedAgo = c.lastUpdated ? minutesSince(c.lastUpdated) : 9999;
+    c._score = scoreClinic(c);
+  }
+  return clinics;
+}
+
+function passesFilters(c){
+  if (c._distanceKm > state.maxDistanceKm) return false;
+  if (state.maxWaitMin > 0 && c._waitMin > state.maxWaitMin) return false;
+
+  if (state.openNow === "open" && !(c._open.status === "open" || c._open.status === "closingSoon")) return false;
+  if (state.openNow === "closing" && c._open.status !== "closingSoon") return false;
+
+  if (state.selectedServices.size){
+    const set = new Set((c.services || []).map(x=>x.trim()));
+    for (const s of state.selectedServices){
+      if (!set.has(s)) return false;
     }
+  }
+  return true;
+}
 
-    function hav(a,b,c,d) {
-      const R = 6371, t = x => x * Math.PI / 180;
-      const dl = t(c - a), dn = t(d - b);
-      const q = Math.sin(dl/2)**2 + Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;
-      return 2 * R * Math.asin(Math.sqrt(q));
-    }
+function sortClinics(list){
+  const s = state.sortBy;
+  const arr = [...list];
+  if (s === "distance") arr.sort((a,b)=> a._distanceKm - b._distanceKm);
+  else if (s === "wait") arr.sort((a,b)=> a._waitMin - b._waitMin);
+  else if (s === "rating") arr.sort((a,b)=> (b.rating||0) - (a.rating||0));
+  else if (s === "updated") arr.sort((a,b)=> a._updatedAgo - b._updatedAgo);
+  else arr.sort((a,b)=> a._score - b._score);
+  return arr;
+}
 
-    function ll(el) {
-      if (el.lat != null && el.lon != null) return [el.lat, el.lon];
-      if (el.center?.lat != null && el.center?.lon != null) return [el.center.lat, el.center.lon];
-      return [null, null];
-    }
+// ---------- Render markers + list ----------
+function renderMarkers(clinics){
+  markersLayer.clearLayers();
 
-    function dir(fl, fo, tl, to, m = "walking") {
-      return `https://www.google.com/maps/dir/?api=1&origin=${fl},${fo}&destination=${tl},${to}&travelmode=${m}`;
-    }
+  clinics.forEach(c=>{
+    const badge = waitBadge(c._waitMin);
+    const open = c._open.status;
 
-    function is247(t) {
-      return (t.opening_hours || "").trim() === "24/7"
-        || t.railway === "station"
-        || t.amenity === "bus_station";
-    }
+    const color = open === "closed" ? "#a7b2cc"
+      : (badge.cls === "good" ? "#22c55e" : badge.cls === "warn" ? "#f59e0b" : "#ef4444");
 
-    function hasWifi(t) {
-      return t.wifi === "yes" || t.internet_access === "yes" || t.internet_access === "wlan";
-    }
+    const isHi = state.highlightedId === c.id;
 
-    function status(msg, isError = false) {
-      $("status").innerHTML = isError
-        ? `<span style="color:#fecaca">${esc(msg)}</span>`
-        : esc(msg);
-    }
+    const marker = L.circleMarker([c.lat, c.lng], {
+      radius: isHi ? 11 : 8,
+      weight: isHi ? 3 : 2,
+      color,
+      fillColor: color,
+      fillOpacity: open === "closed" ? 0.22 : 0.34
+    });
 
-    function saveSettings() {
-      sj(LS.settings, {
-        radiusKm: Number($("radiusKm").value || 5),
-        sortBy: $("sortBy").value,
-        open247Only: $("open247Only").checked,
-        showHeat: $("showHeat").checked,
-        wifiOnly: $("wifiOnly").checked,
-        highConfidenceOnly: $("highConfidenceOnly").checked,
-        selectedCats: [...selected],
-        theme: document.body.classList.contains("theme-light") ? "light" : "dark",
-        sidebarCollapsed: $("app").classList.contains("sidebar-collapsed"),
-        mapStyle: $("mapStyleSelect").value || "osm",
-        mapCenter: (curLat != null && curLon != null) ? [curLat, curLon] : null
-      });
-    }
+    const openText = open === "open" ? "Open now"
+      : (open === "closingSoon" ? `Closing in ${Math.round(c._open.closesInMin)}m` : "Closed");
 
-    function loadSettings() {
-      const s = pj(LS.settings, null);
-      if (!s) return;
+    const popup = `
+      <div style="font-family: ui-sans-serif, system-ui; line-height:1.35; min-width:220px;">
+        <div style="font-weight:900; margin-bottom:4px;">${escapeHtml(c.name)}</div>
+        <div style="color:#94a3b8; font-size:12px; margin-bottom:8px;">${escapeHtml(c.address || "")}</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+          <span style="padding:4px 8px; border-radius:999px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.06); font-size:12px;"><b>Wait</b>: ~${Math.round(c._waitMin)}m</span>
+          <span style="padding:4px 8px; border-radius:999px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.06); font-size:12px;">${openText}</span>
+          <span style="padding:4px 8px; border-radius:999px; border:1px solid rgba(0,0,0,.12); background:rgba(0,0,0,.06); font-size:12px;"><b>Dist</b>: ${fmtKm(c._distanceKm)}</span>
+        </div>
+        <div style="color:#94a3b8; font-size:12px;">Updated ${escapeHtml(c.lastUpdated ? timeAgo(c.lastUpdated) : "unknown")}</div>
+      </div>
+    `;
+    marker.bindPopup(popup);
 
-      if (Number.isFinite(s.radiusKm)) $("radiusKm").value = s.radiusKm;
-      if (s.sortBy) $("sortBy").value = s.sortBy;
-      $("open247Only").checked = !!s.open247Only;
-      $("showHeat").checked = s.showHeat !== false;
-      $("wifiOnly").checked = !!s.wifiOnly;
-      $("highConfidenceOnly").checked = !!s.highConfidenceOnly;
+    marker.on("click", ()=>{
+      state.highlightedId = c.id;
+      highlightOnMap(c);
+      renderMarkers(clinics);
+      renderList(clinics);
+    });
 
-      if (Array.isArray(s.selectedCats) && s.selectedCats.length) {
-        selected = new Set(s.selectedCats.filter(k => CATS.some(c => c.k === k)));
-      }
+    marker.addTo(markersLayer);
+  });
+}
 
-      if (s.theme === "light") document.body.classList.add("theme-light");
-      if (s.sidebarCollapsed) $("app").classList.add("sidebar-collapsed");
-      if (s.mapStyle && MAP_STYLES[s.mapStyle]) $("mapStyleSelect").value = s.mapStyle;
+function renderList(clinics){
+  const host = $("#clinicList");
+  host.innerHTML = "";
 
-      if (Array.isArray(s.mapCenter) && s.mapCenter.length === 2) {
-        curLat = Number(s.mapCenter[0]);
-        curLon = Number(s.mapCenter[1]);
-      }
-    }
+  $("#statCount").textContent = String(clinics.length);
+  $("#statBest").textContent = clinics.length ? (clinics[0].name.length>18 ? clinics[0].name.slice(0,18)+"…" : clinics[0].name) : "—";
 
-    function votes() { return pj(LS.votes, {}); }
-    function getVote(id) { return votes()[id] || { yes: 0, no: 0 }; }
+  if (!clinics.length){
+    host.innerHTML = `
+      <div class="card">
+        <div class="title">No clinics match your filters.</div>
+        <div class="sub">Try increasing max distance/wait or removing service filters.</div>
+      </div>
+    `;
+    return;
+  }
 
-    function castVote(id, type) {
-      const v = votes();
-      const row = v[id] || { yes: 0, no: 0 };
-      if (type === "yes") row.yes += 1;
-      if (type === "no") row.no += 1;
-      v[id] = row;
-      sj(LS.votes, v);
-    }
+  for (const c of clinics){
+    const badge = waitBadge(c._waitMin);
+    const open = c._open.status;
+    const openText = open === "open" ? "Open now" : (open === "closingSoon" ? `Closing in ${Math.round(c._open.closesInMin)}m` : "Closed");
+    const updatedText = c.lastUpdated ? `Updated ${timeAgo(c.lastUpdated)}` : "No update time";
 
-    function cScore(id) {
-      const v = getVote(id);
-      const t = v.yes + v.no;
-      if (!t) return 0;
-      return (v.yes - v.no) / t;
-    }
+    const services = (c.services || []).slice(0,6);
+    const more = (c.services || []).length - services.length;
 
-    function scoreOSM(t) {
-      let s = 0;
-      ["socket","socket:usb","charging","power_supply","outlet"].forEach(k => { if (k in t) s += 4; });
-      if (["cafe","restaurant","fast_food","food_court"].includes(t.amenity)) s += 3;
-      if (["library","college","university","school"].includes(t.amenity)) s += 3;
-      if (["coworking","co-working"].includes(t.office)) s += 3;
-      if (t.shop === "mall" || t.building === "retail") s += 2;
-      if (["hotel","hostel"].includes(t.tourism)) s += 2;
-      if (t.public_transport || t.railway === "station" || t.amenity === "bus_station") s += 2;
-      if (hasWifi(t)) s += 1;
-      if (is247(t)) s += 1;
-      return s;
-    }
-
-    function confLevel(p) {
-      const adj = p.base + cScore(p.id) * 2;
-      if (adj >= 8) return "high";
-      if (adj >= 5) return "mid";
-      return "low";
-    }
-
-    function confLabel(p) {
-      const lvl = confLevel(p);
-      if (lvl === "high") return "High confidence";
-      if (lvl === "mid") return "Likely";
-      return "Possible";
-    }
-
-    function weightedRank(p) {
-      return p.base + cScore(p.id) * 2 - p.dist * 0.25 + (p.is247 ? 0.6 : 0) + (p.hasWifi ? 0.3 : 0);
-    }
-
-    const map = L.map("map", { zoomControl: true }).setView([43.6532, -79.3832], 12);
-
-    const guaranteedOSM = L.tileLayer(MAP_STYLES.osm.url, MAP_STYLES.osm.options).addTo(map);
-    let currentBaseLayer = guaranteedOSM;
-
-    function setMapStyle(styleKey) {
-      if (!MAP_STYLES[styleKey]) styleKey = "osm";
-      const cfg = MAP_STYLES[styleKey];
-
-      if (styleKey === "osm") {
-        if (!map.hasLayer(guaranteedOSM)) guaranteedOSM.addTo(map);
-        if (currentBaseLayer && currentBaseLayer !== guaranteedOSM && map.hasLayer(currentBaseLayer)) {
-          map.removeLayer(currentBaseLayer);
-        }
-        currentBaseLayer = guaranteedOSM;
-        saveSettings();
-        return;
-      }
-
-      const candidate = L.tileLayer(cfg.url, cfg.options);
-      let swapped = false;
-
-      const finalizeSwap = () => {
-        if (swapped) return;
-        swapped = true;
-        if (currentBaseLayer && map.hasLayer(currentBaseLayer)) map.removeLayer(currentBaseLayer);
-        currentBaseLayer = candidate;
-        saveSettings();
-      };
-
-      candidate.once("load", finalizeSwap);
-
-      candidate.once("tileerror", () => {
-        if (!map.hasLayer(guaranteedOSM)) guaranteedOSM.addTo(map);
-        if (map.hasLayer(candidate)) map.removeLayer(candidate);
-        if (currentBaseLayer && currentBaseLayer !== guaranteedOSM && map.hasLayer(currentBaseLayer)) {
-          map.removeLayer(currentBaseLayer);
-        }
-        currentBaseLayer = guaranteedOSM;
-        $("mapStyleSelect").value = "osm";
-        saveSettings();
-      });
-
-      candidate.addTo(map);
-      setTimeout(() => {
-        if (!swapped && map.hasLayer(candidate)) finalizeSwap();
-      }, 1400);
-    }
-
-    let placeLayer = L.layerGroup().addTo(map);
-    let heatLayer = L.layerGroup().addTo(map);
-    let me = null, circle = null;
-
-    function markerStyle(p) {
-      const level = confLevel(p);
-      if (level === "high") return { radius: 8, color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.32, weight: 1.4 };
-      if (level === "mid") return { radius: 7, color: "#f59e0b", fillColor: "#f59e0b", fillOpacity: 0.3, weight: 1.3 };
-      return { radius: 6, color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.28, weight: 1.2 };
-    }
-
-    function favs() { return pj(LS.fav, []); }
-    function isFav(id) { return favs().some(f => f.id === id); }
-
-    function toggleFav(p) {
-      const fs = favs();
-      const i = fs.findIndex(x => x.id === p.id);
-      if (i >= 0) fs.splice(i, 1);
-      else fs.push({ id: p.id, name: p.name, type: p.type, lat: p.lat, lon: p.lon, dist: p.dist, savedAt: Date.now() });
-      sj(LS.fav, fs);
-      renderFav();
-      renderResults();
-    }
-
-    function exportFavs() {
-      const blob = new Blob([JSON.stringify({ exportedAt: Date.now(), favorites: favs() }, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "public-charging-favorites.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    function importFavsFromFile(file) {
-      const r = new FileReader();
-      r.onload = () => {
-        try {
-          const data = JSON.parse(String(r.result || "{}"));
-          const imported = Array.isArray(data.favorites) ? data.favorites : [];
-          if (!imported.length) throw new Error("No favorites found in file.");
-          sj(LS.fav, imported);
-          renderFav();
-          renderResults();
-          status(`Imported ${imported.length} favorite(s).`);
-        } catch (e) {
-          status(`Import failed: ${e.message || "Invalid JSON file."}`, true);
-        }
-      };
-      r.readAsText(file);
-    }
-
-    function renderFav() {
-      const box = $("favList");
-      const fs = favs();
-      box.innerHTML = "";
-
-      if (!fs.length) {
-        box.innerHTML = `<div class="card"><div class="meta">No favorites yet.</div></div>`;
-        return;
-      }
-
-      fs.sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
-
-      fs.forEach(f => {
-        const c = document.createElement("div");
-        c.className = "card";
-        c.innerHTML = `
-          <div class="title-row">
-            <div class="title">${esc(f.name)}</div>
-            <span class="confidence conf-mid">Saved</span>
+    const card = document.createElement("div");
+    card.className = "card" + (state.highlightedId === c.id ? " highlight" : "");
+    card.innerHTML = `
+      <div class="cardTop">
+        <div class="badge ${badge.cls}">${badge.text}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <h3 class="title" title="${escapeAttr(c.name)}">${escapeHtml(c.name)}</h3>
+            <div class="badge ${open === "open" ? "good" : (open === "closingSoon" ? "warn" : "bad")}">${openText}</div>
           </div>
-          <div class="meta">${esc(f.type)} ${f.dist != null ? "• " + fmt.format(f.dist) + " km" : ""}</div>
+          <div class="sub" title="${escapeAttr(c.address || "")}">${escapeHtml(c.address || "")}</div>
+
+          <div class="metaPills">
+            <div class="pill"><span class="muted">Distance</span> <b>${fmtKm(c._distanceKm)}</b></div>
+            <div class="pill"><span class="muted">Rating</span> <b>${(c.rating||0).toFixed(1)}</b></div>
+            <div class="pill"><span class="muted">Updated</span> <b>${escapeHtml(updatedText)}</b></div>
+          </div>
+
+          <div class="metaPills" style="margin-top:8px;">
+            ${services.map(s=>`<span class="pill">${escapeHtml(s)}</span>`).join("")}
+            ${more>0 ? `<span class="pill muted">+${more} more</span>` : ""}
+          </div>
+
           <div class="actions">
-            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "walking")}">Walk</a>
-            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "driving")}">Drive</a>
-            <a class="pill" target="_blank" rel="noopener" href="${dir(curLat ?? f.lat, curLon ?? f.lon, f.lat, f.lon, "transit")}">Transit</a>
+            <button class="btn small primary" data-act="view" data-id="${escapeAttr(c.id)}">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.9"/>
+                <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              </svg>
+              <span class="txt">View</span>
+            </button>
+
+            <button class="btn small" data-act="directions" data-id="${escapeAttr(c.id)}">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" stroke-width="1.9"/>
+              </svg>
+              <span class="txt">Directions</span>
+            </button>
+
+            <button class="btn small" data-act="report" data-id="${escapeAttr(c.id)}">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 19V5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.9"/>
+                <path d="M8 13h8M8 9h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              </svg>
+              <span class="txt">Report</span>
+            </button>
           </div>
-        `;
-        c.onclick = () => map.setView([f.lat, f.lon], 17);
-        box.appendChild(c);
-      });
+        </div>
+      </div>
+    `;
+
+    card.addEventListener("click", (e)=>{
+      if (e.target.closest("button")) return;
+      focusClinic(c.id);
+    });
+
+    host.appendChild(card);
+  }
+
+  host.querySelectorAll("button[data-act]").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const id = btn.getAttribute("data-id");
+      const act = btn.getAttribute("data-act");
+      if (act === "view") focusClinic(id);
+      if (act === "directions") openDirections(id);
+      if (act === "report") openReportModal(id);
+    });
+  });
+}
+
+function focusClinic(id){
+  const c = currentRendered.find(x=>x.id===id) || buildComputed().find(x=>x.id===id);
+  if (!c) return;
+  state.highlightedId = c.id;
+
+  setMapCenter(c.lat, c.lng, 15);
+  highlightOnMap(c);
+
+  // open popup if found
+  markersLayer.eachLayer(layer=>{
+    if (layer.getLatLng && layer.getLatLng().lat === c.lat && layer.getLatLng().lng === c.lng){
+      layer.openPopup();
     }
+  });
 
-    async function geocodeAddress(address) {
-      const q = String(address || "").trim();
-      if (!q) throw new Error("Please enter an address.");
+  renderMarkers(currentRendered);
+  renderList(currentRendered);
+}
 
-      const url = "https://nominatim.openstreetmap.org/search?" + new URLSearchParams({
-        q, format: "jsonv2", limit: "1", addressdetails: "1"
-      }).toString();
+function openDirections(id){
+  const c = currentRendered.find(x=>x.id===id) || buildComputed().find(x=>x.id===id);
+  if (!c) return;
+  const origin = state.userLocation ? `${state.userLocation.lat},${state.userLocation.lng}` : `${state.center.lat},${state.center.lng}`;
+  const dest = `${c.lat},${c.lng}`;
+  const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
-      if (!res.ok) throw new Error(`Geocoding failed (${res.status})`);
+// ---------- Refresh ----------
+function refresh(){
+  const all = buildComputed();
+  const filtered = all.filter(passesFilters);
+  currentRendered = sortClinics(filtered);
 
-      const data = await res.json();
-      if (!Array.isArray(data) || !data.length) throw new Error("Address not found. Try a more specific address.");
+  $("#nearLabel").textContent = state.center.label || `${state.center.lat.toFixed(4)}, ${state.center.lng.toFixed(4)}`;
+  $("#maxDistanceLabel").textContent = `${state.maxDistanceKm} km`;
+  $("#maxWaitLabel").textContent = `${state.maxWaitMin} min`;
 
-      const lat = Number(data[0].lat), lon = Number(data[0].lon);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error("Invalid coordinates returned.");
-      return { lat, lon, label: data[0].display_name || q };
-    }
+  renderMarkers(currentRendered);
+  renderList(currentRendered);
 
-    // ===== Autocomplete functions =====
-    function splitLabel(label) {
-      const parts = String(label || "").split(",").map(s => s.trim()).filter(Boolean);
-      return {
-        main: parts.slice(0, 2).join(", ") || label || "",
-        sub: parts.slice(2).join(", ")
-      };
-    }
+  persistSettings();
+}
 
-    function hideSuggestions() {
-      const box = $("suggestions");
-      box.style.display = "none";
-      box.innerHTML = "";
-      currentSuggestions = [];
-      activeSuggestIndex = -1;
-    }
+// ---------- Address search (Nominatim) ----------
+const addressInput = $("#addressInput");
+const suggestBox = $("#suggestBox");
 
-    function showSuggestions(items) {
-      const box = $("suggestions");
-      currentSuggestions = items;
-      activeSuggestIndex = -1;
-      box.innerHTML = "";
+let suggestOpen = false;
+let suggestItems = [];
+let activeIndex = -1;
+let debounceTimer = null;
+let abortCtrl = null;
+let lastQuery = "";
+let lastFetchAt = 0;
 
-      if (!items.length) {
-        hideSuggestions();
-        return;
-      }
+function openSuggest(items, loading=false, infoText=""){
+  suggestItems = items || [];
+  activeIndex = -1;
 
-      items.forEach((item, idx) => {
-        const { main, sub } = splitLabel(item.display_name);
-        const row = document.createElement("div");
-        row.className = "suggestion-item";
-        row.setAttribute("role", "option");
-        row.dataset.index = String(idx);
-        row.innerHTML = `
-          <div class="suggestion-main">${esc(main)}</div>
-          <div class="suggestion-sub">${esc(sub)}</div>
-        `;
-        row.addEventListener("mousedown", (e) => {
-          // mousedown so it fires before input blur
-          e.preventDefault();
-          pickSuggestion(idx);
-        });
-        box.appendChild(row);
-      });
+  const header = `
+    <div class="suggestHeader">
+      <div>${loading ? `<span style="display:inline-flex; gap:8px; align-items:center;"><span class="spin"></span> Searching…</span>` : (infoText ? escapeHtml(infoText) : "Suggestions")}</div>
+      <div style="font-family:var(--mono);">↑ ↓ Enter</div>
+    </div>
+  `;
 
-      box.style.display = "block";
-    }
+  if (!loading && (!items || !items.length)){
+    suggestBox.innerHTML = header + `<div class="suggestRow" style="cursor:default;"><div style="color:var(--muted); font-size:12px;">No results. Try adding city or postal code.</div></div>`;
+    suggestBox.style.display = "block";
+    suggestOpen = true;
+    return;
+  }
 
-    function setActiveSuggestion(index) {
-      const box = $("suggestions");
-      const nodes = box.querySelectorAll(".suggestion-item");
-      nodes.forEach(n => n.classList.remove("active"));
-      if (index >= 0 && index < nodes.length) {
-        nodes[index].classList.add("active");
-        nodes[index].scrollIntoView({ block: "nearest" });
-      }
-    }
-
-    function pickSuggestion(index) {
-      const item = currentSuggestions[index];
-      if (!item) return;
-      $("addressInput").value = item.display_name;
-      selectedSuggestion = {
-        lat: Number(item.lat),
-        lon: Number(item.lon),
-        label: item.display_name
-      };
-      hideSuggestions();
-    }
-
-    async function fetchAddressSuggestions(query) {
-      const q = String(query || "").trim();
-      if (q.length < 3) return [];
-
-      const params = new URLSearchParams({
-        q,
-        format: "jsonv2",
-        addressdetails: "1",
-        limit: "6"
-      });
-
-      const res = await fetch("https://nominatim.openstreetmap.org/search?" + params.toString(), {
-        headers: { "Accept": "application/json" }
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      if (!Array.isArray(data)) return [];
-      return data;
-    }
-
-    async function fetchOSM(lat, lon, km) {
-      const r = Math.round(km * 1000);
-      const q = `
-[out:json][timeout:45];
-(
-  nwr(around:${r},${lat},${lon})[amenity~"cafe|restaurant|fast_food|food_court|library|college|university|school|bus_station|atm"];
-  nwr(around:${r},${lat},${lon})[shop="mall"];
-  nwr(around:${r},${lat},${lon})[tourism~"hotel|hostel"];
-  nwr(around:${r},${lat},${lon})[public_transport];
-  nwr(around:${r},${lat},${lon})[railway="station"];
-  nwr(around:${r},${lat},${lon})[office~"coworking|co-working"];
-  nwr(around:${r},${lat},${lon})["socket"];
-  nwr(around:${r},${lat},${lon})["socket:usb"];
-  nwr(around:${r},${lat},${lon})["charging"];
-  nwr(around:${r},${lat},${lon})["power_supply"];
-  nwr(around:${r},${lat},${lon})["outlet"];
-);
-out center tags;`.trim();
-
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        body: new URLSearchParams({ data: q })
-      });
-
-      if (!res.ok) throw new Error(`Overpass failed (${res.status})`);
-      const data = await res.json();
-      return data.elements || [];
-    }
-
-    function normalize(elements, lat, lon) {
-      const m = new Map();
-      for (const e of elements) {
-        const [la, lo] = ll(e);
-        if (la == null || lo == null) continue;
-
-        const t = e.tags || {};
-        const id = `${e.type}/${e.id}`;
-        const base = scoreOSM(t);
-        if (base < 2) continue;
-
-        m.set(id, {
-          id, lat: la, lon: lo, tags: t,
-          name: t.name || t.brand || "Unnamed place",
-          type: t.amenity || t.shop || t.tourism || t.office || t.public_transport || t.railway || "place",
-          base,
-          dist: hav(lat, lon, la, lo),
-          is247: is247(t),
-          hasWifi: hasWifi(t),
-          tagsPreview: Object.entries(t)
-            .filter(([k]) => [
-              "amenity","shop","tourism","office","public_transport","railway",
-              "socket","socket:usb","charging","power_supply","outlet","opening_hours","wifi","internet_access"
-            ].includes(k))
-            .slice(0, 8)
-            .map(([k,v]) => `${k}:${v}`)
-        });
-      }
-      return [...m.values()];
-    }
-
-    function apply() {
-      const sort = $("sortBy").value;
-      const only247 = $("open247Only").checked;
-      const wifiOnly = $("wifiOnly").checked;
-      const highOnly = $("highConfidenceOnly").checked;
-
-      shown = all.filter(p => {
-        const cat = CATS.some(c => selected.has(c.k) && c.m(p.tags));
-        return cat
-          && (!only247 || p.is247)
-          && (!wifiOnly || p.hasWifi)
-          && (!highOnly || confLevel(p) === "high");
-      });
-
-      shown.sort((a, b) => {
-        if (sort === "nearest") return a.dist - b.dist;
-        if (sort === "community") return cScore(b.id) - cScore(a.id) || a.dist - b.dist;
-        if (sort === "confidence") {
-          const lv = { high: 3, mid: 2, low: 1 };
-          return lv[confLevel(b)] - lv[confLevel(a)] || weightedRank(b) - weightedRank(a);
-        }
-        return weightedRank(b) - weightedRank(a);
-      });
-    }
-
-    function updateKpis() {
-      $("kpiTotal").textContent = String(shown.length);
-      $("kpiHigh").textContent = String(shown.filter(p => confLevel(p) === "high").length);
-      const avg = shown.length ? shown.reduce((s,p) => s + p.dist, 0) / shown.length : 0;
-      $("kpiAvgDist").textContent = `${fmt.format(avg)} km`;
-    }
-
-    function renderHeat() {
-      heatLayer.clearLayers();
-      if (!$("showHeat").checked) return;
-
-      shown.slice(0, 140).forEach(p => {
-        const intensity = Math.max(0, Math.min(1, (p.base / 12) + (cScore(p.id) * 0.25)));
-        L.circle([p.lat, p.lon], {
-          radius: 70 + intensity * 150,
-          weight: 0,
-          fillOpacity: 0.08 + intensity * 0.2,
-          fillColor: confLevel(p) === "high" ? "#22c55e" : confLevel(p) === "mid" ? "#f59e0b" : "#ef4444"
-        }).addTo(heatLayer);
-      });
-    }
-
-    function renderMap() {
-      placeLayer.clearLayers();
-
-      if (me) map.removeLayer(me);
-      if (circle) map.removeLayer(circle);
-
-      const km = Number($("radiusKm").value || 5);
-
-      if (curLat != null && curLon != null) {
-        me = L.marker([curLat, curLon]).addTo(map).bindPopup("<b>Your selected location</b>");
-        circle = L.circle([curLat, curLon], {
-          radius: km * 1000,
-          fillOpacity: 0.05,
-          color: "#4f46e5",
-          weight: 1.2
-        }).addTo(map);
-      }
-
-      shown.slice(0, 260).forEach(p => {
-        const v = getVote(p.id);
-        L.circleMarker([p.lat, p.lon], markerStyle(p))
-          .addTo(placeLayer)
-          .bindPopup(`
-            <div style="min-width:240px">
-              <div style="font-weight:900; margin-bottom:2px">${esc(p.name)}</div>
-              <div style="font-size:12px; color:#8ea3bf">${esc(p.type)} • ${fmt.format(p.dist)} km</div>
-              <div style="font-size:12px; color:#8ea3bf; margin-top:2px">${confLabel(p)}${p.is247 ? " • 24/7 likely" : ""}${p.hasWifi ? " • Wi-Fi likely" : ""}</div>
-              <div style="font-size:12px; color:#8ea3bf; margin-top:2px">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
-            </div>
-          `);
-      });
-
-      renderHeat();
-
-      if (curLat != null && curLon != null) {
-        const layers = [me, circle, ...placeLayer.getLayers()].filter(Boolean);
-        if (layers.length) {
-          const fg = L.featureGroup(layers);
-          const b = fg.getBounds();
-          if (b.isValid()) map.fitBounds(b.pad(0.2), { maxZoom: 15 });
-        }
-      }
-    }
-
-    function confidenceBadge(p) {
-      const lvl = confLevel(p);
-      if (lvl === "high") return `<span class="confidence conf-high">High</span>`;
-      if (lvl === "mid") return `<span class="confidence conf-mid">Likely</span>`;
-      return `<span class="confidence conf-low">Possible</span>`;
-    }
-
-    function cardHTML(p) {
-      const v = getVote(p.id);
+  let rows = "";
+  if (loading){
+    rows = `<div class="suggestRow" style="cursor:default;"><div style="color:var(--muted); font-size:12px;">Fetching suggestions…</div></div>`;
+  } else {
+    rows = items.map((it, idx)=>{
+      const display = it.display_name || "";
+      const title = display.split(",").slice(0,2).join(", ");
+      const sub = display.split(",").slice(2).join(", ").trim();
       return `
-        <div class="title-row">
-          <div class="title">${esc(p.name)}</div>
-          ${confidenceBadge(p)}
-        </div>
-        <div class="meta">
-          ${esc(p.type)} • ${fmt.format(p.dist)} km
-          ${p.is247 ? " • 24/7 likely" : ""}
-          ${p.hasWifi ? " • Wi-Fi likely" : ""}
-        </div>
-        <div>${p.tagsPreview.slice(0,6).map(t => `<span class="pill">${esc(t)}</span>`).join("")}</div>
-        <div class="meta">Community: 👍 ${v.yes} • 👎 ${v.no}</div>
-        <div class="actions">
-          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "walking")}">Walk</a>
-          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "driving")}">Drive</a>
-          <a class="pill" target="_blank" rel="noopener" href="${dir(curLat, curLon, p.lat, p.lon, "transit")}">Transit</a>
-          <button class="pill-btn fav" data-id="${esc(p.id)}">${isFav(p.id) ? "★ Saved" : "☆ Save"}</button>
-          <button class="pill-btn ok yes" data-id="${esc(p.id)}">I charged here</button>
-          <button class="pill-btn bad no" data-id="${esc(p.id)}">No outlet</button>
+        <div class="suggestRow" data-idx="${idx}">
+          <div class="pin" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 24 24" fill="none">
+              <path d="M12 22s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M12 12.8a2.1 2.1 0 1 0 0-4.2 2.1 2.1 0 0 0 0 4.2Z" stroke="currentColor" stroke-width="1.9"/>
+            </svg>
+          </div>
+          <div style="min-width:0;">
+            <div class="sTitle">${escapeHtml(title)}</div>
+            <div class="sSub">${escapeHtml(sub)}</div>
+          </div>
         </div>
       `;
+    }).join("");
+  }
+
+  suggestBox.innerHTML = header + rows;
+  suggestBox.style.display = "block";
+  suggestOpen = true;
+
+  // Click handlers
+  suggestBox.querySelectorAll(".suggestRow[data-idx]").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      const idx = Number(row.getAttribute("data-idx"));
+      chooseSuggestion(idx);
+    });
+  });
+}
+
+function closeSuggest(){
+  suggestBox.style.display = "none";
+  suggestOpen = false;
+  suggestItems = [];
+  activeIndex = -1;
+}
+
+function setActiveIndex(i){
+  activeIndex = i;
+  const rows = Array.from(suggestBox.querySelectorAll(".suggestRow[data-idx]"));
+  rows.forEach(r=>r.classList.remove("active"));
+  const target = rows.find(r=>Number(r.getAttribute("data-idx"))===activeIndex);
+  if (target){
+    target.classList.add("active");
+    // keep it visible
+    const boxRect = suggestBox.getBoundingClientRect();
+    const rRect = target.getBoundingClientRect();
+    if (rRect.bottom > boxRect.bottom) suggestBox.scrollTop += (rRect.bottom - boxRect.bottom) + 8;
+    if (rRect.top < boxRect.top) suggestBox.scrollTop -= (boxRect.top - rRect.top) + 8;
+  }
+}
+
+function chooseSuggestion(idx){
+  const it = suggestItems[idx];
+  if (!it) return;
+
+  const lat = Number(it.lat), lng = Number(it.lon);
+  const label = (it.display_name || "").split(",").slice(0,3).join(", ");
+
+  addressInput.value = it.display_name || "";
+  closeSuggest();
+  setCenter({ lat, lng, label });
+}
+
+function setCenter({lat,lng,label}){
+  state.center = { lat, lng, label };
+  setMapCenter(lat,lng,13);
+  refresh();
+  fitToResults();
+}
+
+async function nominatimSearch(q){
+  // rate limit: 1 request / 1 second
+  const now = Date.now();
+  const wait = Math.max(0, 1000 - (now - lastFetchAt));
+  if (wait) await new Promise(r=>setTimeout(r, wait));
+  lastFetchAt = Date.now();
+
+  if (abortCtrl) abortCtrl.abort();
+  abortCtrl = new AbortController();
+
+  // Use jsonv2, add addressdetails, limit, accept-language for better results
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=7&accept-language=en&q=${encodeURIComponent(q)}`;
+
+  // IMPORTANT: Do NOT set forbidden headers in browsers (e.g., User-Agent)
+  const res = await fetch(url, {
+    method: "GET",
+    signal: abortCtrl.signal,
+    headers: { "Accept": "application/json" }
+  });
+
+  if (!res.ok) throw new Error("Search failed");
+  return await res.json();
+}
+
+addressInput.addEventListener("input", ()=>{
+  const q = addressInput.value.trim();
+  if (q.length < 3){
+    closeSuggest();
+    return;
+  }
+  if (q === lastQuery) return;
+  lastQuery = q;
+
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(async ()=>{
+    try{
+      openSuggest([], true);
+      const items = await nominatimSearch(q);
+      openSuggest(items, false, items.length ? "" : "No results");
+    }catch(e){
+      if (e.name === "AbortError") return;
+      openSuggest([], false, "Search error");
+      toast("Search isn’t responding", "Try again or include city (e.g., “Bloor St W, Toronto”).");
     }
+  }, 320);
+});
 
-    function renderResults() {
-      const box = $("results");
-      box.innerHTML = "";
-      $("count").textContent = `${shown.length} match(es)`;
-      updateKpis();
+// Keyboard nav for suggestions
+addressInput.addEventListener("keydown", async (e)=>{
+  if (e.key === "Escape"){
+    closeSuggest();
+    return;
+  }
 
-      if (!shown.length) {
-        box.innerHTML = `<div class="card"><div class="meta">No matches. Try a larger radius or fewer filters.</div></div>`;
-        return;
-      }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k"){
+    e.preventDefault();
+    addressInput.focus();
+    addressInput.select();
+    return;
+  }
 
-      shown.slice(0, 120).forEach(p => {
-        const c = document.createElement("div");
-        c.className = "card";
-        c.innerHTML = cardHTML(p);
-
-        c.onclick = (e) => {
-          if (e.target.closest("button") || e.target.closest("a")) return;
-          map.setView([p.lat, p.lon], 17);
-        };
-
-        box.appendChild(c);
-      });
-
-      box.querySelectorAll(".fav").forEach(btn => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          const p = shown.find(x => x.id === btn.dataset.id);
-          if (p) toggleFav(p);
-        };
-      });
-
-      box.querySelectorAll(".yes").forEach(btn => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          castVote(btn.dataset.id, "yes");
-          apply(); renderResults(); renderMap();
-        };
-      });
-
-      box.querySelectorAll(".no").forEach(btn => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          castVote(btn.dataset.id, "no");
-          apply(); renderResults(); renderMap();
-        };
-      });
-    }
-
-    function renderChips() {
-      const box = $("chips");
-      box.innerHTML = "";
-      CATS.forEach(c => {
-        const d = document.createElement("div");
-        d.className = "chip" + (selected.has(c.k) ? " active" : "");
-        d.textContent = c.l;
-        d.onclick = () => {
-          if (selected.has(c.k)) selected.delete(c.k);
-          else selected.add(c.k);
-          d.classList.toggle("active");
-          saveSettings();
-          apply(); renderResults(); renderMap();
-        };
-        box.appendChild(d);
-      });
-    }
-
-    function saveCache() {
-      sj(LS.cache, {
-        savedAt: Date.now(),
-        lat: curLat, lon: curLon,
-        radiusKm: Number($("radiusKm").value || 5),
-        items: all.slice(0, 400)
-      });
-    }
-
-    function loadCache() {
-      const c = pj(LS.cache, null);
-      if (!c || !c.items) {
-        status("No offline cache found yet.", true);
-        return;
-      }
-      curLat = c.lat;
-      curLon = c.lon;
-      $("radiusKm").value = c.radiusKm;
-      all = c.items;
-
-      apply(); renderResults(); renderMap();
-      saveSettings();
-      status(`Loaded offline cache from ${new Date(c.savedAt).toLocaleString()}.`);
-    }
-
-    async function search() {
-      if (curLat == null || curLon == null) {
-        status("Enable location or enter an address first.", true);
-        return;
-      }
-
-      const km = Number($("radiusKm").value || 5);
-      if (!Number.isFinite(km) || km < 1 || km > 30) {
-        status("Radius must be between 1 and 30 km.", true);
-        return;
-      }
-
-      $("locateBtn").disabled = true;
-      $("refreshBtn").disabled = true;
-      $("useAddressBtn").disabled = true;
-      status("Searching nearby places...");
-
-      try {
-        const raw = await fetchOSM(curLat, curLon, km);
-        all = normalize(raw, curLat, curLon);
-        saveCache();
-        saveSettings();
-
-        apply();
-        renderResults();
-        renderMap();
-
-        status(`Found ${shown.length} matches within ${km} km.`);
-      } catch (e) {
-        console.error(e);
-        status(`Search failed: ${e?.message || "Unknown error"}. Try again or load cache.`, true);
-      } finally {
-        $("locateBtn").disabled = false;
-        $("refreshBtn").disabled = false;
-        $("useAddressBtn").disabled = false;
-      }
-    }
-
-    function locate() {
-      if (!navigator.geolocation) {
-        status("Geolocation is not supported by this browser.", true);
-        return;
-      }
-      status("Getting your location...");
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          curLat = pos.coords.latitude;
-          curLon = pos.coords.longitude;
-          map.setView([curLat, curLon], 14);
-          search();
-        },
-        (err) => {
-          console.error(err);
-          status("Location denied or unavailable. Enter an address instead.", true);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-      );
-    }
-
-    async function useAddress() {
-      const addr = $("addressInput").value.trim();
-      if (!addr) {
-        status("Please enter an address.", true);
-        return;
-      }
-
-      $("useAddressBtn").disabled = true;
-      $("locateBtn").disabled = true;
-      $("refreshBtn").disabled = true;
-      status("Looking up address...");
-
-      try {
-        let picked = selectedSuggestion;
-
-        // If user typed after selecting a suggestion, invalidate selectedSuggestion
-        if (picked && picked.label !== addr) picked = null;
-
-        if (!picked) {
-          picked = await geocodeAddress(addr);
+  if (!suggestOpen){
+    if (e.key === "Enter"){
+      const q = addressInput.value.trim();
+      if (q.length >= 3){
+        try{
+          openSuggest([], true);
+          const items = await nominatimSearch(q);
+          if (items && items[0]) chooseSuggestion(0);
+          else openSuggest([], false, "No results");
+        }catch{
+          toast("Couldn’t search that", "Try adding a city or postal code.");
         }
-
-        curLat = Number(picked.lat);
-        curLon = Number(picked.lon);
-
-        map.setView([curLat, curLon], 14);
-        status(`Using address: ${picked.label || addr}`);
-        hideSuggestions();
-        await search();
-      } catch (e) {
-        console.error(e);
-        status(e.message || "Could not use that address.", true);
-      } finally {
-        $("useAddressBtn").disabled = false;
-        $("locateBtn").disabled = false;
-        $("refreshBtn").disabled = false;
       }
     }
+    return;
+  }
 
-    function toggleTheme() {
-      document.body.classList.toggle("theme-light");
-      saveSettings();
+  if (e.key === "ArrowDown"){
+    e.preventDefault();
+    setActiveIndex(clamp(activeIndex + 1, 0, suggestItems.length - 1));
+  }
+  if (e.key === "ArrowUp"){
+    e.preventDefault();
+    setActiveIndex(clamp(activeIndex - 1, 0, suggestItems.length - 1));
+  }
+  if (e.key === "Enter"){
+    e.preventDefault();
+    const idx = activeIndex >= 0 ? activeIndex : 0;
+    chooseSuggestion(idx);
+  }
+});
+
+document.addEventListener("click", (e)=>{
+  if (!e.target.closest(".inputWrap")) closeSuggest();
+});
+
+// Global shortcut Ctrl/⌘ K
+document.addEventListener("keydown", (e)=>{
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k"){
+    e.preventDefault();
+    addressInput.focus();
+    addressInput.select();
+  }
+});
+
+// ---------- UI bindings ----------
+$("#sortBy").value = state.sortBy;
+$("#openNow").value = state.openNow;
+$("#maxDistance").value = state.maxDistanceKm;
+$("#maxWait").value = state.maxWaitMin;
+$("#reportModeLabel").textContent = state.reportMode ? "ON" : "OFF";
+
+$("#sortBy").addEventListener("change", (e)=>{ state.sortBy = e.target.value; persistSettings(); refresh(); });
+$("#openNow").addEventListener("change", (e)=>{ state.openNow = e.target.value; persistSettings(); refresh(); });
+$("#maxDistance").addEventListener("input", (e)=>{ state.maxDistanceKm = Number(e.target.value); persistSettings(); refresh(); });
+$("#maxWait").addEventListener("input", (e)=>{ state.maxWaitMin = Number(e.target.value); persistSettings(); refresh(); });
+
+$("#btnReportMode").addEventListener("click", ()=>{
+  state.reportMode = !state.reportMode;
+  $("#reportModeLabel").textContent = state.reportMode ? "ON" : "OFF";
+  persistSettings();
+  refresh();
+});
+
+$("#btnFit").addEventListener("click", fitToResults);
+$("#btnCenter").addEventListener("click", ()=> setMapCenter(state.center.lat, state.center.lng, 13));
+
+$("#btnReset").addEventListener("click", ()=>{
+  state.selectedServices = new Set();
+  state.sortBy = "best";
+  state.openNow = "any";
+  state.maxDistanceKm = 12;
+  state.maxWaitMin = 120;
+  state.highlightedId = null;
+
+  $("#sortBy").value = state.sortBy;
+  $("#openNow").value = state.openNow;
+  $("#maxDistance").value = state.maxDistanceKm;
+  $("#maxWait").value = state.maxWaitMin;
+
+  renderServiceChips();
+  refresh();
+  fitToResults();
+  toast("Reset complete", "Filters restored to defaults.");
+});
+
+$("#btnClearLocal").addEventListener("click", ()=>{
+  const ok = confirm("Clear locally saved clinics + reports on this device?");
+  if (!ok) return;
+  localStorage.removeItem(LS.clinics);
+  localStorage.removeItem(LS.reports);
+  state.highlightedId = null;
+  refresh();
+  fitToResults();
+  toast("Local data cleared");
+});
+
+// ---------- Geolocation ----------
+$("#btnUseLocation").addEventListener("click", ()=>{
+  if (!navigator.geolocation){
+    toast("Geolocation not available", "Search an address instead.");
+    return;
+  }
+  toast("Getting your location…");
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      const { latitude, longitude } = pos.coords;
+      state.userLocation = { lat: latitude, lng: longitude };
+      setCenter({ lat: latitude, lng: longitude, label: "Your location" });
+      toast("Centered on your location");
+    },
+    ()=>{
+      toast("Couldn’t access your location", "Allow location access or search an address.");
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:60000 }
+  );
+});
+
+// ---------- Modal system ----------
+const modalBackdrop = $("#modalBackdrop");
+const modalTitle = $("#modalTitle");
+const modalBody = $("#modalBody");
+const modalActions = $("#modalActions");
+
+function openModal(title, bodyHtml, actionsHtml){
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHtml;
+  modalActions.innerHTML = actionsHtml;
+  modalBackdrop.style.display = "flex";
+}
+function closeModal(){
+  modalBackdrop.style.display = "none";
+  modalBody.innerHTML = "";
+  modalActions.innerHTML = "";
+}
+$("#btnCloseModal").addEventListener("click", closeModal);
+modalBackdrop.addEventListener("click", (e)=>{ if (e.target === modalBackdrop) closeModal(); });
+document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && modalBackdrop.style.display === "flex") closeModal(); });
+
+// ---------- Add clinic ----------
+$("#btnAddClinic").addEventListener("click", openAddClinicModal);
+
+function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+function normalizeHM(hm){
+  const [h,m] = hm.split(":").map(Number);
+  const hh = String(clamp(h,0,23)).padStart(2,"0");
+  const mm = String(clamp(m,0,59)).padStart(2,"0");
+  return `${hh}:${mm}`;
+}
+function parseHoursText(txt){
+  const out = { mon:null,tue:null,wed:null,thu:null,fri:null,sat:null,sun:null };
+  if (!txt) return out;
+  const lines = txt.split("\n").map(l=>l.trim()).filter(Boolean);
+  for (const line of lines){
+    const m = line.match(/^(mon|tue|wed|thu|fri|sat|sun)\s+(.+)$/i);
+    if (!m) continue;
+    const day = m[1].toLowerCase();
+    const rest = m[2].trim().toLowerCase();
+    if (rest.includes("closed")){ out[day]=null; continue; }
+    const r = rest.match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+    if (!r) continue;
+    out[day] = [normalizeHM(r[1]), normalizeHM(r[2])];
+  }
+  return out;
+}
+
+function openAddClinicModal(){
+  const body = `
+    <div class="formGrid">
+      <div class="field">
+        <label>Clinic name</label>
+        <input id="fName" placeholder="Example: Midtown Walk-In Clinic" />
+      </div>
+      <div class="field">
+        <label>Phone (optional)</label>
+        <input id="fPhone" placeholder="(416) 555-1234" />
+      </div>
+
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Address (used for map pin)</label>
+        <input id="fAddress" placeholder="Example: 123 Bloor St W, Toronto, ON" />
+      </div>
+
+      <div class="field">
+        <label>Website (optional)</label>
+        <input id="fWebsite" placeholder="https://..." />
+      </div>
+
+      <div class="field">
+        <label>Base wait estimate (min)</label>
+        <input id="fWait" type="number" min="0" max="240" value="45" />
+      </div>
+
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Services (comma-separated)</label>
+        <input id="fServices" placeholder="Walk-in, Vaccines, Bloodwork" />
+      </div>
+
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Hours</label>
+        <textarea id="fHours" placeholder="Example:
+mon 09:00-19:00
+tue 09:00-19:00
+wed 09:00-19:00
+thu 09:00-19:00
+fri 09:00-18:00
+sat 10:00-16:00
+sun closed"></textarea>
+      </div>
+    </div>
+    <div class="note">
+      Saved on <b>your device</b> via <code>localStorage</code>. For a public directory, connect a backend later.
+      Address search uses OpenStreetMap Nominatim and is rate-limited.
+    </div>
+  `;
+  const actions = `
+    <button class="btn small" id="btnCancelAdd">Cancel</button>
+    <button class="btn small primary" id="btnSaveAdd">Save Clinic</button>
+  `;
+  openModal("Add Clinic", body, actions);
+
+  $("#btnCancelAdd").addEventListener("click", closeModal);
+  $("#btnSaveAdd").addEventListener("click", async ()=>{
+    const name = ($("#fName").value || "").trim();
+    const address = ($("#fAddress").value || "").trim();
+    if (!name || !address){
+      toast("Missing info", "Please enter a clinic name and address.");
+      return;
     }
 
-    function toggleSidebar() {
-      $("app").classList.toggle("sidebar-collapsed");
-      setTimeout(() => map.invalidateSize(), 220);
-      saveSettings();
+    toast("Adding clinic…", "Geocoding address.");
+    try{
+      const items = await nominatimSearch(address);
+      if (!items || !items[0]){
+        toast("Couldn’t locate that address", "Try adding city/postal code.");
+        return;
+      }
+      const lat = Number(items[0].lat), lng = Number(items[0].lon);
+
+      const clinic = {
+        id: "u_" + uid(),
+        name,
+        address,
+        lat, lng,
+        phone: ($("#fPhone").value || "").trim(),
+        website: ($("#fWebsite").value || "").trim(),
+        services: ($("#fServices").value || "").split(",").map(s=>s.trim()).filter(Boolean),
+        hours: parseHoursText(($("#fHours").value || "").trim()),
+        rating: 4.2,
+        baseWaitMin: clamp(Number($("#fWait").value || 45), 0, 240),
+        lastUpdated: new Date().toISOString()
+      };
+
+      const local = loadJSON(LS.clinics, []);
+      local.unshift(clinic);
+      saveJSON(LS.clinics, local);
+
+      closeModal();
+      setCenter({ lat, lng, label: clinic.address.split(",").slice(0,2).join(", ") });
+      state.highlightedId = clinic.id;
+      refresh();
+      fitToResults();
+      toast("Clinic added!");
+    }catch(e){
+      toast("Couldn’t add clinic", "Try again in a moment.");
     }
+  });
+});
 
-    function registerAutocomplete() {
-      const input = $("addressInput");
-      const box = $("suggestions");
+// ---------- Report wait modal ----------
+function openReportModal(clinicId){
+  const c = buildComputed().find(x=>x.id===clinicId);
+  if (!c) return;
 
-      input.addEventListener("input", () => {
-        const q = input.value.trim();
-        selectedSuggestion = null; // user changed text
-        activeSuggestIndex = -1;
+  const reports = (getReports()[clinicId] || []).slice(0,5);
+  const body = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="field">
+        <label>Clinic</label>
+        <input value="${escapeAttr(c.name)}" disabled />
+      </div>
 
-        if (suggestTimer) clearTimeout(suggestTimer);
+      <div class="formGrid">
+        <div class="field">
+          <label>Current estimated wait</label>
+          <input value="~${Math.round(c._waitMin)} min" disabled />
+        </div>
+        <div class="field">
+          <label>Submit wait you experienced (minutes)</label>
+          <input id="fReportWait" type="number" min="0" max="600" placeholder="Example: 35" />
+        </div>
+      </div>
 
-        if (q.length < 3) {
-          hideSuggestions();
-          return;
-        }
-
-        suggestTimer = setTimeout(async () => {
-          try {
-            const results = await fetchAddressSuggestions(q);
-            // if input changed while waiting, ignore stale result
-            if (input.value.trim() !== q) return;
-            showSuggestions(results);
-          } catch (e) {
-            console.error(e);
-            hideSuggestions();
+      <div class="field">
+        <label>Recent community reports</label>
+        <div style="font-size:12px; line-height:1.45;">
+          ${
+            reports.length
+              ? reports.map(r => `• <b>${Math.round(r.minutes)}m</b> <span class="muted">(${escapeHtml(timeAgo(r.ts))})</span>`).join("<br/>")
+              : `<span class="muted">No reports yet. Be the first to help others.</span>`
           }
-        }, 260);
-      });
+        </div>
+      </div>
 
-      input.addEventListener("keydown", (e) => {
-        const visible = box.style.display === "block" && currentSuggestions.length > 0;
+      <div class="note">Reports are stored locally on your device. Add a backend later to share across users.</div>
+    </div>
+  `;
+  const actions = `
+    <button class="btn small" id="btnCancelReport">Cancel</button>
+    <button class="btn small primary" id="btnSaveReport">Submit</button>
+  `;
+  openModal("Report Wait Time", body, actions);
 
-        if (e.key === "ArrowDown" && visible) {
-          e.preventDefault();
-          activeSuggestIndex = (activeSuggestIndex + 1) % currentSuggestions.length;
-          setActiveSuggestion(activeSuggestIndex);
-          return;
-        }
-
-        if (e.key === "ArrowUp" && visible) {
-          e.preventDefault();
-          activeSuggestIndex = (activeSuggestIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
-          setActiveSuggestion(activeSuggestIndex);
-          return;
-        }
-
-        if (e.key === "Enter") {
-          e.preventDefault();
-          if (visible && activeSuggestIndex >= 0) {
-            pickSuggestion(activeSuggestIndex);
-          }
-          useAddress();
-          return;
-        }
-
-        if (e.key === "Escape") {
-          hideSuggestions();
-        }
-      });
-
-      input.addEventListener("focus", () => {
-        if (currentSuggestions.length) $("suggestions").style.display = "block";
-      });
-
-      // Delay hide so click/mousedown can register
-      input.addEventListener("blur", () => {
-        setTimeout(() => hideSuggestions(), 120);
-      });
-
-      document.addEventListener("click", (e) => {
-        const wrap = e.target.closest(".autocomplete-wrap");
-        if (!wrap) hideSuggestions();
-      });
+  $("#btnCancelReport").addEventListener("click", closeModal);
+  $("#btnSaveReport").addEventListener("click", ()=>{
+    const v = Number($("#fReportWait").value);
+    if (!Number.isFinite(v) || v < 0 || v > 600){
+      toast("Invalid wait time", "Enter a number between 0 and 600.");
+      return;
     }
+    addReport(clinicId, v);
+    closeModal();
+    refresh();
+    toast("Thanks! Report submitted.");
+  });
+}
 
-    function registerEvents() {
-      $("locateBtn").onclick = locate;
-      $("refreshBtn").onclick = search;
-      $("offlineBtn").onclick = loadCache;
-      $("useAddressBtn").onclick = useAddress;
+// ---------- Init ----------
+renderServiceChips();
+setMapCenter(state.center.lat, state.center.lng, 13);
+refresh();
+setTimeout(()=>fitToResults(), 450);
 
-      $("sortBy").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
-      $("open247Only").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
-      $("showHeat").onchange = () => { saveSettings(); renderMap(); };
-      $("wifiOnly").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
-      $("highConfidenceOnly").onchange = () => { saveSettings(); apply(); renderResults(); renderMap(); };
-      $("radiusKm").onchange = saveSettings;
-
-      $("clearFavBtn").onclick = () => {
-        localStorage.removeItem(LS.fav);
-        renderFav(); renderResults();
-        status("Favorites cleared.");
-      };
-
-      $("exportFavBtn").onclick = exportFavs;
-      $("importFavBtn").onclick = () => $("importFavFile").click();
-      $("importFavFile").addEventListener("change", (e) => {
-        const file = e.target.files?.[0];
-        if (file) importFavsFromFile(file);
-        e.target.value = "";
-      });
-
-      $("selectAllCatsBtn").onclick = () => {
-        selected = new Set(CATS.map(c => c.k));
-        renderChips(); saveSettings();
-        apply(); renderResults(); renderMap();
-      };
-
-      $("clearCatsBtn").onclick = () => {
-        selected = new Set();
-        renderChips(); saveSettings();
-        apply(); renderResults(); renderMap();
-      };
-
-      $("themeBtn").onclick = toggleTheme;
-      $("collapseBtn").onclick = toggleSidebar;
-      $("mapStyleSelect").onchange = () => setMapStyle($("mapStyleSelect").value);
-
-      window.addEventListener("resize", () => map.invalidateSize());
-
-      registerAutocomplete();
-    }
-
-    (function init() {
-      try {
-        loadSettings();
-        setMapStyle($("mapStyleSelect").value || "osm");
-        registerEvents();
-        renderChips();
-        renderFav();
-
-        if (curLat != null && curLon != null) map.setView([curLat, curLon], 13);
-
-        apply();
-        renderResults();
-        renderMap();
-      } catch (e) {
-        console.error(e);
-        status(`Initialization error: ${e?.message || "Unknown error"}`, true);
-      }
-    })();
-  </script>
+// Auto-refresh so “closing soon” stays accurate
+setInterval(()=>refresh(), 60000);
+</script>
 </body>
 </html>
